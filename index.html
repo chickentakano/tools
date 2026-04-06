@@ -5,11 +5,12 @@
 <title>御請求書</title>
 <style>
   @media print {
-    html, body { margin: 0 !important; padding: 0 !important; background: #fff; }
+    *, html, body, div { margin: 0 !important; padding: 0 !important; border: none !important; background: #fff !important; box-shadow: none !important; }
     .input-panel { display: none !important; }
-    .layout { display: block; }
-    .preview-wrap { width: 210mm; margin: 0; overflow: visible; }
-    .page { box-shadow: none; margin: 0 !important; transform: none !important; }
+    .layout, .preview-wrap { display: block !important; width: auto !important; height: auto !important; overflow: visible !important; }
+    .page { padding: 15mm 18mm !important; min-height: 0 !important; }
+    .p-total-bar { background: #f5f5f5 !important; border: 1px solid #ddd !important; border-radius: 4px !important; }
+    .p-table thead th { background: #333 !important; color: #fff !important; }
     @page { size: A4; margin: 0; }
   }
   * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -95,7 +96,7 @@
       </div>
       <div class="p-parties">
         <div class="p-to">
-          <div class="p-to-name" id="pTo">株式会社Gaudiy</div>
+          <div class="p-to-name" id="pTo"></div>
           <div class="p-to-sub">御中</div>
         </div>
         <div class="p-from" id="pFrom"></div>
@@ -133,7 +134,7 @@
       <div class="field"><label>発行日</label><input type="text" id="fDate" value="2026年4月6日"></div>
       <div class="field"><label>お支払期限</label><input type="text" id="fDue" value="2026年4月30日"></div>
     </div>
-    <div class="field"><label>請求先</label><input type="text" id="fTo" value="株式会社Gaudiy"></div>
+    <div class="field"><label>請求先</label><input type="text" id="fTo" value="" placeholder="株式会社Gaudiy"></div>
 
     <div class="section-label">請求元</div>
     <div class="field"><label>名前</label><input type="text" id="fName" value=""></div>
@@ -247,7 +248,7 @@ function render() {
   var zip = document.getElementById('fZip').value;
   if (zip) fromParts.push(zip);
   var addr = document.getElementById('fAddr').value;
-  if (addr) fromParts.push(addr);
+  if (addr) fromParts.push(addr.replace(/\n/g, '<br>'));
   if (company) fromParts.push(company);
   var tel = document.getElementById('fTel').value;
   if (tel) fromParts.push('TEL: ' + tel);
