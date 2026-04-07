@@ -22,7 +22,6 @@
 
   .progress-bar { width: 100%; max-width: 600px; height: 6px; background: #333; border-radius: 3px; margin: 0 auto 20px; overflow: hidden; display: none; }
   .progress-fill { height: 100%; background: #7fe08c; width: 0%; transition: width 0.2s; }
-
   .status { text-align: center; font-size: 13px; margin-bottom: 20px; min-height: 20px; }
 
   .actions { display: flex; gap: 12px; justify-content: center; margin-bottom: 24px; }
@@ -39,17 +38,17 @@
   .image-card-info { padding: 6px 10px; }
   .image-card-name { font-size: 10px; color: #888; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-bottom: 2px; }
   .image-card-size { font-size: 10px; color: #555; }
-  .image-card.converting { opacity: 0.5; }
-  .image-card.done { border-color: #4a4a4a; }
   .image-card.error { border-color: #e07f7f; }
-
   .note { text-align: center; font-size: 11px; color: #555; margin-top: 24px; }
+  .lib-status { text-align: center; font-size: 11px; margin-bottom: 16px; }
 </style>
 </head>
 <body>
 
 <h1>HEIC → JPG CONVERTER</h1>
 <div class="subtitle">HEICファイルをJPGに一括変換（ブラウザ内処理・アップロードなし）</div>
+
+<div class="lib-status" id="libStatus"><span style="color:#e0c97f;">デコーダ読み込み中...</span></div>
 
 <div class="controls">
   <label>JPG品質 <input type="range" id="quality" min="50" max="100" value="92"> <span class="val" id="qualityVal">92%</span></label>
@@ -72,21 +71,20 @@
 </div>
 
 <div class="image-grid" id="imageGrid"></div>
-
 <div class="note">※ 変換はすべてブラウザ内で処理されます。画像がサーバーにアップロードされることはありません。</div>
 
-<script>
-// Load libheif WASM decoder
-var libheifReady = false;
-var libheifModule = null;
-var libheifScript = document.createElement('script');
-libheifScript.src = 'https://cdn.jsdelivr.net/npm/libheif-js@1.18.2/libheif-wasm/libheif.min.js';
-libheifScript.onload = function() {
-  var decoder = new libheif.HeifDecoder();
-  libheifModule = decoder;
-  libheifReady = true;
-};
-document.head.appendChild(libheifScript);
+<script type="module">
+// Use the ESM build of libheif-js which works reliably in browsers
+import libheif from 'https://cdn.jsdelivr.net/npm/libheif-js@1.18.2/+esm';
+
+var decoder = null;
+try {
+  decoder = new libheif.HeifDecoder();
+  document.getElementById('libStatus').innerHTML = '<span style="color:#7fe08c;">デコーダ準備完了</span>';
+  setTimeout(function() { document.getElementById('libStatus').style.display = 'none'; }, 2000);
+} catch(e) {
+  document.getElementById('libStatus').innerHTML = '<span style="color:#e07f7f;">デコーダ初期化失敗: ' + e.message + '</span>';
+}
 
 var entries = [];
 var dropZone = document.getElementById('dropZone');
@@ -113,9 +111,7 @@ document.getElementById('btnClear').addEventListener('click', function() {
 });
 
 document.getElementById('btnDownloadAll').addEventListener('click', function() {
-  entries.forEach(function(e) {
-    if (e.blob) downloadBlob(e.blob, e.jpgName);
-  });
+  entries.forEach(function(e) { if (e.blob) downloadBlob(e.blob, e.jpgName); });
 });
 
 function isHeic(file) {
@@ -124,20 +120,16 @@ function isHeic(file) {
 }
 
 function addFiles(files) {
-  var arr = Array.from(files);
-  // Accept HEIC + normal images
+  var arr = Array.from(files).filter(function(f) {
+    return f.type.startsWith('image/') || isHeic(f) || f.name.toLowerCase().match(/\.(jpg|jpeg|png|gif|webp|heic|heif)$/);
+  });
+  if (!arr.length) return;
+
   var heicFiles = arr.filter(isHeic);
-  var normalFiles = arr.filter(function(f) { return !isHeic(f) && f.type.startsWith('image/'); });
+  var normalFiles = arr.filter(function(f) { return !isHeic(f); });
 
-  if (heicFiles.length === 0 && normalFiles.length === 0) {
-    document.getElementById('status').innerHTML = '<span style="color:#e07f7f;">対応ファイルが見つかりませんでした</span>';
-    return;
-  }
-
-  // Normal images: just pass through (already JPG/PNG)
   normalFiles.forEach(function(file) {
-    var entry = { file: file, jpgName: file.name, blob: file, status: 'done' };
-    entries.push(entry);
+    entries.push({ file: file, jpgName: file.name, blob: file, status: 'done' });
   });
 
   if (heicFiles.length === 0) {
@@ -146,16 +138,18 @@ function addFiles(files) {
     return;
   }
 
-  // Convert HEIC files
+  if (!decoder) {
+    document.getElementById('status').innerHTML = '<span style="color:#e07f7f;">デコーダが利用できません</span>';
+    return;
+  }
+
   var bar = document.getElementById('progressBar');
   var fill = document.getElementById('progressFill');
   bar.style.display = 'block';
   fill.style.width = '0%';
-  document.getElementById('status').innerHTML = '<span style="color:#e0c97f;">変換中... 0 / ' + heicFiles.length + '</span>';
 
   var quality = parseInt(document.getElementById('quality').value) / 100;
   var done = 0;
-  var successCount = 0;
 
   function convertNext() {
     if (done >= heicFiles.length) {
@@ -170,67 +164,41 @@ function addFiles(files) {
     var entry = { file: file, jpgName: jpgName, blob: null, status: 'converting' };
     entries.push(entry);
 
-    // Try native Image first, then libheif WASM
-    var testImg = new Image();
-    var url = URL.createObjectURL(file);
+    file.arrayBuffer().then(function(buffer) {
+      try {
+        var data = decoder.decode(new Uint8Array(buffer));
+        if (!data || !data.length) throw new Error('no image data');
 
-    testImg.onload = function() {
-      var c = document.createElement('canvas');
-      c.width = testImg.naturalWidth;
-      c.height = testImg.naturalHeight;
-      c.getContext('2d').drawImage(testImg, 0, 0);
-      URL.revokeObjectURL(url);
-      c.toBlob(function(blob) {
-        entry.blob = blob;
-        entry.status = 'done';
-        successCount++;
-        finishOne();
-      }, 'image/jpeg', quality);
-    };
+        var image = data[0];
+        var w = image.get_width();
+        var h = image.get_height();
 
-    testImg.onerror = function() {
-      URL.revokeObjectURL(url);
-      // Use libheif WASM decoder
-      if (!libheifReady) {
+        var c = document.createElement('canvas');
+        c.width = w;
+        c.height = h;
+        var cx = c.getContext('2d');
+        var imageData = cx.createImageData(w, h);
+
+        image.display(imageData, function(displayData) {
+          cx.putImageData(displayData || imageData, 0, 0);
+          c.toBlob(function(blob) {
+            entry.blob = blob;
+            entry.status = 'done';
+            advance();
+          }, 'image/jpeg', quality);
+        });
+      } catch(e) {
+        console.warn('decode error:', file.name, e);
         entry.status = 'error';
-        finishOne();
-        return;
+        advance();
       }
-      file.arrayBuffer().then(function(buffer) {
-        try {
-          var decoder = new libheif.HeifDecoder();
-          var data = decoder.decode(new Uint8Array(buffer));
-          if (!data || !data.length) { entry.status = 'error'; finishOne(); return; }
-          var image = data[0];
-          var w = image.get_width();
-          var h = image.get_height();
-          var c = document.createElement('canvas');
-          c.width = w; c.height = h;
-          var cx = c.getContext('2d');
-          var imageData = cx.createImageData(w, h);
-          image.display(imageData, function() {
-            cx.putImageData(imageData, 0, 0);
-            c.toBlob(function(blob) {
-              entry.blob = blob;
-              entry.status = 'done';
-              successCount++;
-              finishOne();
-            }, 'image/jpeg', quality);
-          });
-        } catch(e) {
-          console.warn('libheif error:', file.name, e);
-          entry.status = 'error';
-          finishOne();
-        }
-      }).catch(function() {
-        entry.status = 'error';
-        finishOne();
-      });
-    };
+    }).catch(function(e) {
+      console.warn('read error:', file.name, e);
+      entry.status = 'error';
+      advance();
+    });
 
-    testImg.src = url;
-
-    function finishOne() {
+    function advance() {
       done++;
       fill.style.width = (done / heicFiles.length * 100) + '%';
       document.getElementById('status').innerHTML = '<span style="color:#e0c97f;">変換中... ' + done + ' / ' + heicFiles.length + '</span>';
@@ -242,12 +210,12 @@ function addFiles(files) {
 }
 
 function updateStatus() {
-  var doneCount = entries.filter(function(e) { return e.status === 'done'; }).length;
-  var errorCount = entries.filter(function(e) { return e.status === 'error'; }).length;
-  var msg = '<span style="color:#7fe08c;">' + doneCount + '枚 変換完了</span>';
-  if (errorCount) msg += '　<span style="color:#e07f7f;">' + errorCount + '枚 失敗</span>';
+  var ok = entries.filter(function(e) { return e.status === 'done'; }).length;
+  var ng = entries.filter(function(e) { return e.status === 'error'; }).length;
+  var msg = '<span style="color:#7fe08c;">' + ok + '枚 変換完了</span>';
+  if (ng) msg += '　<span style="color:#e07f7f;">' + ng + '枚 失敗</span>';
   document.getElementById('status').innerHTML = msg;
-  document.getElementById('btnDownloadAll').disabled = doneCount === 0;
+  document.getElementById('btnDownloadAll').disabled = ok === 0;
   document.getElementById('btnClear').disabled = entries.length === 0;
 }
 
@@ -255,14 +223,12 @@ function renderGrid() {
   grid.innerHTML = '';
   entries.forEach(function(entry) {
     var card = document.createElement('div');
-    card.className = 'image-card ' + entry.status;
-
+    card.className = 'image-card' + (entry.status === 'error' ? ' error' : '');
     if (entry.blob) {
       var img = document.createElement('img');
       img.src = URL.createObjectURL(entry.blob);
       card.appendChild(img);
     }
-
     var info = document.createElement('div');
     info.className = 'image-card-info';
     var nameDiv = document.createElement('div');
@@ -275,8 +241,6 @@ function renderGrid() {
       sizeDiv.textContent = kb > 1024 ? (kb / 1024).toFixed(1) + ' MB' : kb + ' KB';
     } else if (entry.status === 'error') {
       sizeDiv.innerHTML = '<span style="color:#e07f7f;">変換失敗</span>';
-    } else {
-      sizeDiv.textContent = '変換中...';
     }
     info.appendChild(nameDiv);
     info.appendChild(sizeDiv);
