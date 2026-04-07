@@ -327,21 +327,38 @@ function processFilesWithImages(normalFiles, heicImages) {
   processNormalNext();
 }
 
-var hasFaceDetector = typeof FaceDetector !== 'undefined';
+// face-api.js face detection
+var faceApiReady = false;
+var faceApiScript = document.createElement('script');
+faceApiScript.src = 'https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js';
+faceApiScript.onload = function() {
+  // Load tiny face detector model from same origin
+  var modelUrl = window.location.href.replace(/[^/]*$/, '') + 'models';
+  // If local file, use CDN
+  if (modelUrl.startsWith('file:')) {
+    modelUrl = 'https://chickentakano.github.io/tools/models';
+  }
+  faceapi.nets.tinyFaceDetector.loadFromUri(modelUrl).then(function() {
+    faceApiReady = true;
+  }).catch(function(e) {
+    console.warn('face-api model load failed, using block analysis fallback', e);
+  });
+};
+document.head.appendChild(faceApiScript);
 
 function calcSharpness(img) {
   return new Promise(function(resolve) {
     var maxDim = 1024;
-    var scale = Math.min(maxDim / img.naturalWidth, maxDim / img.naturalHeight, 1);
-    var w = Math.floor(img.naturalWidth * scale);
-    var h = Math.floor(img.naturalHeight * scale);
+    var sc = Math.min(maxDim / img.naturalWidth, maxDim / img.naturalHeight, 1);
+    var w = Math.floor(img.naturalWidth * sc);
+    var h = Math.floor(img.naturalHeight * sc);
 
     var c = document.createElement('canvas');
     c.width = w; c.height = h;
-    var cx = c.getContext('2d');
-    cx.drawImage(img, 0, 0, w, h);
+    var ctx = c.getContext('2d');
+    ctx.drawImage(img, 0, 0, w, h);
 
-    var imageData = cx.getImageData(0, 0, w, h);
+    var imageData = ctx.getImageData(0, 0, w, h);
     var data = imageData.data;
 
     // Grayscale
@@ -352,77 +369,75 @@ function calcSharpness(img) {
     }
 
     // Laplacian (8-neighbor)
-    var laplacian = new Float32Array(w * h);
+    var lap = new Float32Array(w * h);
     for (var y = 1; y < h - 1; y++) {
       for (var x = 1; x < w - 1; x++) {
-        laplacian[y * w + x] = -8 * gray[y * w + x]
-          + gray[(y - 1) * w + (x - 1)] + gray[(y - 1) * w + x] + gray[(y - 1) * w + (x + 1)]
-          + gray[y * w + (x - 1)] + gray[y * w + (x + 1)]
-          + gray[(y + 1) * w + (x - 1)] + gray[(y + 1) * w + x] + gray[(y + 1) * w + (x + 1)];
+        lap[y * w + x] = -8 * gray[y * w + x]
+          + gray[(y-1)*w+(x-1)] + gray[(y-1)*w+x] + gray[(y-1)*w+(x+1)]
+          + gray[y*w+(x-1)] + gray[y*w+(x+1)]
+          + gray[(y+1)*w+(x-1)] + gray[(y+1)*w+x] + gray[(y+1)*w+(x+1)];
       }
     }
 
     function regionScore(rx, ry, rw, rh) {
       var s = 0, n = 0;
-      var x1 = Math.max(1, Math.floor(rx));
-      var y1 = Math.max(1, Math.floor(ry));
-      var x2 = Math.min(w - 2, Math.floor(rx + rw));
-      var y2 = Math.min(h - 2, Math.floor(ry + rh));
-      for (var y = y1; y < y2; y++) {
-        for (var x = x1; x < x2; x++) {
-          var v = laplacian[y * w + x];
-          s += v * v;
-          n++;
-        }
-      }
-      return n > 0 ? Math.min(100, Math.sqrt(s / n) * 0.3) : 0;
+      var x1 = Math.max(1, Math.floor(rx)), y1 = Math.max(1, Math.floor(ry));
+      var x2 = Math.min(w-2, Math.floor(rx+rw)), y2 = Math.min(h-2, Math.floor(ry+rh));
+      for (var y = y1; y < y2; y++) for (var x = x1; x < x2; x++) { var v = lap[y*w+x]; s += v*v; n++; }
+      return n > 0 ? Math.min(100, Math.sqrt(s/n) * 0.3) : 0;
     }
 
-    // Overall score
-    var allScore = regionScore(1, 1, w - 2, h - 2);
+    var allScore = regionScore(1, 1, w-2, h-2);
 
-    // Try face detection
-    if (hasFaceDetector) {
-      var fd = new FaceDetector();
-      fd.detect(c).then(function(faces) {
-        if (faces.length > 0) {
-          // Score each face region, use the lowest (worst) face score
-          var faceScores = faces.map(function(face) {
-            var b = face.boundingBox;
-            // Expand face region slightly for context
-            var pad = Math.max(b.width, b.height) * 0.3;
-            return regionScore(
-              (b.x - pad) * scale, (b.y - pad) * scale,
-              (b.width + pad * 2) * scale, (b.height + pad * 2) * scale
-            );
-          });
-          var worstFace = Math.min.apply(null, faceScores);
-          // Face sharpness is primary
-          resolve(Math.min(worstFace, allScore));
-        } else {
-          // No face detected - fall back to center-weighted
-          resolve(centerFallback(w, h, laplacian, allScore));
-        }
-      }).catch(function() {
-        resolve(centerFallback(w, h, laplacian, allScore));
-      });
+    // Strategy 1: face-api.js face detection
+    if (faceApiReady) {
+      faceapi.detectAllFaces(c, new faceapi.TinyFaceDetectorOptions({ inputSize: 416, scoreThreshold: 0.3 }))
+        .then(function(faces) {
+          if (faces.length > 0) {
+            var faceScores = faces.map(function(f) {
+              var b = f.box;
+              var pad = Math.max(b.width, b.height) * 0.3;
+              return regionScore(b.x - pad, b.y - pad, b.width + pad*2, b.height + pad*2);
+            });
+            var worstFace = Math.min.apply(null, faceScores);
+            resolve(Math.min(worstFace, allScore));
+          } else {
+            resolve(blockAnalysis(w, h, lap, allScore));
+          }
+        }).catch(function() {
+          resolve(blockAnalysis(w, h, lap, allScore));
+        });
     } else {
-      resolve(centerFallback(w, h, laplacian, allScore));
+      resolve(blockAnalysis(w, h, lap, allScore));
     }
 
-    function centerFallback(w, h, lap, allScore) {
-      var cw = w * 0.5, ch = h * 0.5;
-      var cx = (w - cw) / 2, cy = (h - ch) / 2;
-      var s = 0, n = 0;
-      for (var y = Math.floor(cy); y < Math.floor(cy + ch); y++) {
-        for (var x = Math.floor(cx); x < Math.floor(cx + cw); x++) {
-          var v = lap[y * w + x];
-          s += v * v;
-          n++;
+    // Strategy 2: 9-block analysis fallback
+    function blockAnalysis(w, h, lap, allScore) {
+      var bw = Math.floor(w / 3), bh = Math.floor(h / 3);
+      var scores = [];
+      for (var by = 0; by < 3; by++) {
+        for (var bx = 0; bx < 3; bx++) {
+          scores.push(regionScore(bx * bw, by * bh, bw, bh));
         }
       }
-      var centerScore = n > 0 ? Math.min(100, Math.sqrt(s / n) * 0.3) : 0;
-      return Math.min(centerScore, allScore);
+      // Sort scores
+      scores.sort(function(a, b) { return a - b; });
+      var minBlock = scores[0];
+      var maxBlock = scores[scores.length - 1];
+
+      // If big gap between sharpest and blurriest block,
+      // subject might be in a blurry area
+      // Use average of bottom 4 blocks (likely subject area if blurred)
+      var bottomAvg = (scores[0] + scores[1] + scores[2] + scores[3]) / 4;
+
+      // Weight: if variance between blocks is high, trust the low blocks more
+      var blockVariance = maxBlock - minBlock;
+      if (blockVariance > 20) {
+        // High contrast between blocks = likely subject blur
+        return Math.min(bottomAvg, allScore);
+      }
+      // Low variance = uniform blur or uniform sharpness
+      return allScore;
     }
   });
 }
