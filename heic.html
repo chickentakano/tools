@@ -76,10 +76,17 @@
 <div class="note">※ 変換はすべてブラウザ内で処理されます。画像がサーバーにアップロードされることはありません。</div>
 
 <script>
-// Load heic2any
-var heic2anyScript = document.createElement('script');
-heic2anyScript.src = 'https://cdn.jsdelivr.net/npm/heic2any@0.0.4/dist/heic2any.min.js';
-document.head.appendChild(heic2anyScript);
+// Load libheif WASM decoder
+var libheifReady = false;
+var libheifModule = null;
+var libheifScript = document.createElement('script');
+libheifScript.src = 'https://cdn.jsdelivr.net/npm/libheif-js@1.18.2/libheif-wasm/libheif.min.js';
+libheifScript.onload = function() {
+  var decoder = new libheif.HeifDecoder();
+  libheifModule = decoder;
+  libheifReady = true;
+};
+document.head.appendChild(libheifScript);
 
 var entries = [];
 var dropZone = document.getElementById('dropZone');
@@ -163,41 +170,9 @@ function addFiles(files) {
     var entry = { file: file, jpgName: jpgName, blob: null, status: 'converting' };
     entries.push(entry);
 
-    // Try native first
+    // Try native Image first, then libheif WASM
     var testImg = new Image();
     var url = URL.createObjectURL(file);
-
-    function tryHeic2any() {
-      if (typeof heic2any === 'undefined') {
-        entry.status = 'error';
-        finishOne();
-        return;
-      }
-      heic2any({ blob: file, toType: 'image/jpeg', quality: quality }).then(function(result) {
-        var b = Array.isArray(result) ? result[0] : result;
-        entry.blob = b;
-        entry.status = 'done';
-        successCount++;
-        finishOne();
-      }).catch(function() {
-        // Last resort: try with createImageBitmap
-        createImageBitmap(file).then(function(bitmap) {
-          var c = document.createElement('canvas');
-          c.width = bitmap.width;
-          c.height = bitmap.height;
-          c.getContext('2d').drawImage(bitmap, 0, 0);
-          c.toBlob(function(blob) {
-            entry.blob = blob;
-            entry.status = 'done';
-            successCount++;
-            finishOne();
-          }, 'image/jpeg', quality);
-        }).catch(function() {
-          entry.status = 'error';
-          finishOne();
-        });
-      });
-    }
 
     testImg.onload = function() {
       var c = document.createElement('canvas');
@@ -215,7 +190,42 @@ function addFiles(files) {
 
     testImg.onerror = function() {
       URL.revokeObjectURL(url);
-      tryHeic2any();
+      // Use libheif WASM decoder
+      if (!libheifReady) {
+        entry.status = 'error';
+        finishOne();
+        return;
+      }
+      file.arrayBuffer().then(function(buffer) {
+        try {
+          var decoder = new libheif.HeifDecoder();
+          var data = decoder.decode(new Uint8Array(buffer));
+          if (!data || !data.length) { entry.status = 'error'; finishOne(); return; }
+          var image = data[0];
+          var w = image.get_width();
+          var h = image.get_height();
+          var c = document.createElement('canvas');
+          c.width = w; c.height = h;
+          var cx = c.getContext('2d');
+          var imageData = cx.createImageData(w, h);
+          image.display(imageData, function() {
+            cx.putImageData(imageData, 0, 0);
+            c.toBlob(function(blob) {
+              entry.blob = blob;
+              entry.status = 'done';
+              successCount++;
+              finishOne();
+            }, 'image/jpeg', quality);
+          });
+        } catch(e) {
+          console.warn('libheif error:', file.name, e);
+          entry.status = 'error';
+          finishOne();
+        }
+      }).catch(function() {
+        entry.status = 'error';
+        finishOne();
+      });
     };
 
     testImg.src = url;
