@@ -177,27 +177,33 @@ function addFiles(files) {
 
     file.arrayBuffer().then(function(buffer) {
       try {
+        console.log('decoding:', file.name, buffer.byteLength, 'bytes');
         var data = decoder.decode(new Uint8Array(buffer));
-        if (!data || !data.length) throw new Error('no image data');
+        console.log('decode result:', data, 'length:', data ? data.length : 'null');
+        if (!data || !data.length) throw new Error('no image data returned');
         var image = data[0];
         var w = image.get_width();
         var h = image.get_height();
+        console.log('image size:', w, 'x', h);
         var c = document.createElement('canvas');
         c.width = w; c.height = h;
         var cx = c.getContext('2d');
         var imgData = cx.createImageData(w, h);
+        console.log('calling display...');
         image.display(imgData, function(d) {
+          console.log('display callback, data:', d ? 'yes' : 'no');
           cx.putImageData(d || imgData, 0, 0);
           c.toBlob(function(blob) {
+            console.log('blob created:', blob ? blob.size : 'null');
             entry.blob = blob; entry.status = 'done'; advance();
           }, 'image/jpeg', quality);
         });
       } catch(e) {
-        console.warn('decode error:', file.name, e);
+        console.error('decode error:', file.name, e.message, e.stack);
         entry.status = 'error'; advance();
       }
     }).catch(function(e) {
-      console.warn('read error:', file.name, e);
+      console.error('read error:', file.name, e);
       entry.status = 'error'; advance();
     });
 
