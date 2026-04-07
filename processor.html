@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>画像処理ツール</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: "Hiragino Sans", "Noto Sans JP", sans-serif; background: #1a1a1a; color: #e8e8e8; min-height: 100vh; padding: 32px 20px; }
+  h1 { font-size: 18px; font-weight: 700; margin-bottom: 8px; letter-spacing: 2px; text-align: center; }
+  .subtitle { font-size: 12px; color: #888; margin-bottom: 24px; text-align: center; }
+
+  .settings { display: flex; gap: 16px; justify-content: center; margin-bottom: 24px; flex-wrap: wrap; }
+  .setting-group { background: #252525; border-radius: 8px; padding: 14px 18px; border: 1px solid #333; }
+  .setting-group-title { font-size: 11px; font-weight: 700; color: #888; margin-bottom: 10px; letter-spacing: 1px; }
+  .setting-row { display: flex; gap: 8px; align-items: center; margin-bottom: 6px; }
+  .setting-row:last-child { margin-bottom: 0; }
+  .setting-row label { font-size: 12px; color: #aaa; width: 28px; flex-shrink: 0; }
+  .setting-row input[type="number"] { width: 72px; padding: 6px 8px; border: 1px solid #555; border-radius: 4px; background: #333; color: #fff; font-size: 13px; text-align: center; font-family: inherit; }
+  .setting-row input[type="number"]:focus { outline: none; border-color: #888; }
+  .setting-row .unit { font-size: 11px; color: #666; }
+
+  .setting-group-wm .wm-row { display: flex; gap: 12px; align-items: center; margin-bottom: 8px; }
+  .setting-group-wm .wm-row:last-child { margin-bottom: 0; }
+  .wm-label { font-size: 12px; color: #aaa; white-space: nowrap; }
+  .wm-row input[type="range"] { width: 90px; }
+  .wm-row .wm-val { font-size: 11px; color: #666; width: 36px; }
+  .check-field { display: flex; align-items: center; gap: 8px; }
+  .check-field input[type="checkbox"] { width: 15px; height: 15px; }
+  .check-field label { font-size: 12px; color: #aaa; margin: 0; }
+
+  .drop-zone { width: 100%; max-width: 900px; min-height: 140px; border: 2px dashed #444; border-radius: 12px; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: border-color 0.2s; margin: 0 auto 24px; }
+  .drop-zone:hover, .drop-zone.dragover { border-color: #888; }
+  .drop-zone-text { font-size: 14px; color: #666; text-align: center; padding: 32px; }
+  input[type="file"] { display: none; }
+
+  .actions { display: flex; gap: 12px; justify-content: center; margin-bottom: 24px; }
+  .btn { padding: 10px 28px; border: none; border-radius: 6px; font-size: 13px; font-weight: 700; cursor: pointer; font-family: inherit; }
+  .btn-primary { background: #fff; color: #222; }
+  .btn-primary:hover { background: #ddd; }
+  .btn-secondary { background: #333; color: #fff; border: 1px solid #555; }
+  .btn-secondary:hover { background: #444; }
+  .btn:disabled { opacity: 0.3; cursor: default; }
+
+  .count-label { text-align: center; font-size: 12px; color: #666; margin-bottom: 16px; }
+
+  .image-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 16px; max-width: 1200px; margin: 0 auto; }
+  .image-card { background: #252525; border-radius: 8px; overflow: hidden; border: 1px solid #333; }
+  .image-card-preview { position: relative; overflow: hidden; background: #111; display: flex; align-items: center; justify-content: center; }
+  .image-card-preview canvas { max-width: 100%; display: block; }
+  .image-card-wm { position: absolute; cursor: grab; user-select: none; -webkit-user-select: none; }
+  .image-card-wm:active { cursor: grabbing; }
+  .image-card-wm span { font-family: Arial, Helvetica, sans-serif; font-weight: 900; white-space: nowrap; paint-order: stroke fill; }
+  .image-card-info { padding: 8px 12px; }
+  .image-card-name { font-size: 11px; color: #888; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-bottom: 4px; }
+  .image-card-meta { font-size: 10px; color: #555; display: flex; gap: 6px; flex-wrap: wrap; }
+  .image-card-meta .tag { background: #333; padding: 2px 6px; border-radius: 3px; }
+  .tag-h { color: #7fb4e0; }
+  .tag-v { color: #e0a07f; }
+  .image-card-remove { float: right; background: none; border: none; color: #666; cursor: pointer; font-size: 16px; padding: 0 4px; }
+  .image-card-remove:hover { color: #e07f7f; }
+</style>
+</head>
+<body>
+
+<h1>IMAGE PROCESSOR</h1>
+<div class="subtitle">リサイズ＆クロップ ＋ SAMPLE透かし（ドラッグで位置調整可）</div>
+
+<div class="settings">
+  <div class="setting-group">
+    <div class="setting-group-title">横画像 → 出力サイズ</div>
+    <div class="setting-row"><label>W</label><input type="number" id="hWidth" value="1920"><span class="unit">px</span></div>
+    <div class="setting-row"><label>H</label><input type="number" id="hHeight" value="1080"><span class="unit">px</span></div>
+  </div>
+  <div class="setting-group">
+    <div class="setting-group-title">縦画像 → 出力サイズ</div>
+    <div class="setting-row"><label>W</label><input type="number" id="vWidth" value="1080"><span class="unit">px</span></div>
+    <div class="setting-row"><label>H</label><input type="number" id="vHeight" value="1920"><span class="unit">px</span></div>
+  </div>
+  <div class="setting-group setting-group-wm">
+    <div class="setting-group-title">SAMPLE透かし</div>
+    <div class="check-field" style="margin-bottom:8px;">
+      <input type="checkbox" id="wmEnabled" checked>
+      <label for="wmEnabled">透かしを入れる</label>
+    </div>
+    <div class="wm-row"><span class="wm-label">文字</span><input type="range" id="wmOpacity" min="10" max="80" value="40"><span class="wm-val" id="wmOpacityVal">40%</span></div>
+    <div class="wm-row"><span class="wm-label">枠</span><input type="range" id="wmStroke" min="0" max="100" value="80"><span class="wm-val" id="wmStrokeVal">80%</span></div>
+    <div class="wm-row"><span class="wm-label">サイズ</span><input type="range" id="wmSize" min="10" max="50" value="22"><span class="wm-val" id="wmSizeVal">22%</span></div>
+  </div>
+</div>
+
+<div class="drop-zone" id="dropZone">
+  <div class="drop-zone-text">
+    クリックまたはドラッグ＆ドロップで画像をアップロード<br>
+    <span style="font-size:11px; color:#555;">複数画像OK・縦横自動判別・追加アップロード可</span>
+  </div>
+</div>
+<input type="file" id="fileInput" accept="image/*" multiple>
+
+<div class="actions">
+  <button class="btn btn-primary" id="btnDownloadAll" disabled>一括ダウンロード</button>
+  <button class="btn btn-secondary" id="btnClear" disabled>全てクリア</button>
+</div>
+
+<div class="count-label" id="countLabel"></div>
+<div class="image-grid" id="imageGrid"></div>
+
+<script>
+var entries = [];
+var nextId = 0;
+var dropZone = document.getElementById('dropZone');
+var fileInput = document.getElementById('fileInput');
+var grid = document.getElementById('imageGrid');
+
+// Drop zone
+dropZone.addEventListener('click', function() { fileInput.click(); });
+dropZone.addEventListener('dragover', function(e) { e.preventDefault(); dropZone.classList.add('dragover'); });
+dropZone.addEventListener('dragleave', function() { dropZone.classList.remove('dragover'); });
+dropZone.addEventListener('drop', function(e) { e.preventDefault(); dropZone.classList.remove('dragover'); addFiles(e.dataTransfer.files); });
+fileInput.addEventListener('change', function() { addFiles(fileInput.files); fileInput.value = ''; });
+
+// Settings change → reprocess
+['hWidth','hHeight','vWidth','vHeight'].forEach(function(id) {
+  document.getElementById(id).addEventListener('change', reprocessAll);
+});
+document.getElementById('wmEnabled').addEventListener('change', function() { renderGrid(); });
+['wmOpacity','wmStroke','wmSize'].forEach(function(id) {
+  document.getElementById(id).addEventListener('input', function() {
+    document.getElementById(id + 'Val').textContent = this.value + '%';
+    updateAllWatermarks();
+  });
+});
+
+document.getElementById('btnClear').addEventListener('click', function() { entries = []; renderGrid(); });
+document.getElementById('btnDownloadAll').addEventListener('click', downloadAll);
+
+function addFiles(files) {
+  var arr = Array.from(files).filter(function(f) { return f.type.startsWith('image/'); });
+  var loaded = 0;
+  arr.forEach(function(file) {
+    var img = new Image();
+    img.onload = function() {
+      var entry = { file: file, img: img, canvas: null, isVertical: img.naturalHeight > img.naturalWidth, wmPosX: 0.5, wmPosY: 0.5, id: nextId++ };
+      processEntry(entry);
+      entries.push(entry);
+      loaded++;
+      if (loaded === arr.length) renderGrid();
+    };
+    img.src = URL.createObjectURL(file);
+  });
+}
+
+function getTargetSize(isVertical) {
+  if (isVertical) {
+    return { w: parseInt(document.getElementById('vWidth').value) || 1080, h: parseInt(document.getElementById('vHeight').value) || 1920 };
+  } else {
+    return { w: parseInt(document.getElementById('hWidth').value) || 1920, h: parseInt(document.getElementById('hHeight').value) || 1080 };
+  }
+}
+
+function processEntry(entry) {
+  var img = entry.img;
+  var target = getTargetSize(entry.isVertical);
+  var tw = target.w, th = target.h;
+  var iw = img.naturalWidth, ih = img.naturalHeight;
+  var scale = Math.max(tw / iw, th / ih);
+  var c = document.createElement('canvas');
+  c.width = tw; c.height = th;
+  var cx = c.getContext('2d');
+  var sw = iw * scale, sh = ih * scale;
+  var ox = (sw - tw) / 2, oy = (sh - th) / 2;
+  cx.drawImage(img, -ox / scale, -oy / scale, tw / scale, th / scale, 0, 0, tw, th);
+  entry.canvas = c;
+}
+
+function reprocessAll() {
+  entries.forEach(function(e) { processEntry(e); });
+  renderGrid();
+}
+
+function getWmSettings() {
+  return {
+    enabled: document.getElementById('wmEnabled').checked,
+    opacity: parseInt(document.getElementById('wmOpacity').value) / 100,
+    strokeOpacity: parseInt(document.getElementById('wmStroke').value) / 100,
+    sizeRatio: parseInt(document.getElementById('wmSize').value) / 100
+  };
+}
+
+function renderGrid() {
+  grid.innerHTML = '';
+  document.getElementById('btnDownloadAll').disabled = entries.length === 0;
+  document.getElementById('btnClear').disabled = entries.length === 0;
+  document.getElementById('countLabel').textContent = entries.length ? entries.length + '枚' : '';
+  var wm = getWmSettings();
+
+  entries.forEach(function(entry, idx) {
+    var card = document.createElement('div');
+    card.className = 'image-card';
+    var preview = document.createElement('div');
+    preview.className = 'image-card-preview';
+
+    // Preview canvas (scaled down)
+    var target = getTargetSize(entry.isVertical);
+    var maxW = 280;
+    var ratio = maxW / target.w;
+    var pCanvas = document.createElement('canvas');
+    pCanvas.width = target.w * ratio;
+    pCanvas.height = target.h * ratio;
+    pCanvas.getContext('2d').drawImage(entry.canvas, 0, 0, pCanvas.width, pCanvas.height);
+    preview.appendChild(pCanvas);
+
+    // Watermark overlay
+    if (wm.enabled) {
+      var wmDiv = document.createElement('div');
+      wmDiv.className = 'image-card-wm';
+      var wmSpan = document.createElement('span');
+      wmSpan.textContent = 'SAMPLE';
+      wmDiv.appendChild(wmSpan);
+      preview.appendChild(wmDiv);
+
+      setTimeout(function() { setupWatermark(preview, wmDiv, wmSpan, entry); }, 10);
+    }
+
+    // Info
+    var info = document.createElement('div');
+    info.className = 'image-card-info';
+    var removeBtn = document.createElement('button');
+    removeBtn.className = 'image-card-remove';
+    removeBtn.textContent = '\u00D7';
+    removeBtn.addEventListener('click', function() { entries = entries.filter(function(e) { return e.id !== entry.id; }); renderGrid(); });
+
+    var nameDiv = document.createElement('div');
+    nameDiv.className = 'image-card-name';
+    nameDiv.appendChild(removeBtn);
+    nameDiv.appendChild(document.createTextNode(entry.file.name));
+
+    var metaDiv = document.createElement('div');
+    metaDiv.className = 'image-card-meta';
+    var oTag = document.createElement('span');
+    oTag.className = 'tag ' + (entry.isVertical ? 'tag-v' : 'tag-h');
+    oTag.textContent = entry.isVertical ? '縦' : '横';
+    var sTag = document.createElement('span');
+    sTag.className = 'tag';
+    sTag.textContent = entry.img.naturalWidth + '\u00D7' + entry.img.naturalHeight + ' \u2192 ' + entry.canvas.width + '\u00D7' + entry.canvas.height;
+    metaDiv.appendChild(oTag);
+    metaDiv.appendChild(sTag);
+
+    info.appendChild(nameDiv);
+    info.appendChild(metaDiv);
+    card.appendChild(preview);
+    card.appendChild(info);
+    grid.appendChild(card);
+  });
+}
+
+function setupWatermark(preview, wmDiv, wmSpan, entry) {
+  var pw = preview.offsetWidth;
+  var ph = preview.offsetHeight;
+  if (!pw) return;
+  var wm = getWmSettings();
+  var fontSize = pw * wm.sizeRatio;
+  var stroke = Math.max(fontSize * 0.03, 1);
+
+  wmSpan.style.fontSize = fontSize + 'px';
+  wmSpan.style.color = 'rgba(0,0,0,' + wm.opacity + ')';
+  wmSpan.style.webkitTextStroke = stroke + 'px rgba(255,255,255,' + wm.strokeOpacity + ')';
+
+  var wmW = wmDiv.offsetWidth;
+  var wmH = wmDiv.offsetHeight;
+  wmDiv.style.left = (entry.wmPosX * pw - wmW / 2) + 'px';
+  wmDiv.style.top = (entry.wmPosY * ph - wmH / 2) + 'px';
+
+  // Drag
+  var isDragging = false, startX, startY, origLeft, origTop;
+  function onStart(e) { e.preventDefault(); e.stopPropagation(); isDragging = true; var p = e.touches ? e.touches[0] : e; startX = p.clientX; startY = p.clientY; origLeft = wmDiv.offsetLeft; origTop = wmDiv.offsetTop; }
+  function onMove(e) { if (!isDragging) return; e.preventDefault(); var p = e.touches ? e.touches[0] : e; var nx = Math.max(0, Math.min(pw - wmDiv.offsetWidth, origLeft + p.clientX - startX)); var ny = Math.max(0, Math.min(ph - wmDiv.offsetHeight, origTop + p.clientY - startY)); wmDiv.style.left = nx + 'px'; wmDiv.style.top = ny + 'px'; entry.wmPosX = (nx + wmDiv.offsetWidth / 2) / pw; entry.wmPosY = (ny + wmDiv.offsetHeight / 2) / ph; }
+  function onEnd() { isDragging = false; }
+  wmDiv.addEventListener('mousedown', onStart);
+  wmDiv.addEventListener('touchstart', onStart, { passive: false });
+  document.addEventListener('mousemove', onMove);
+  document.addEventListener('touchmove', onMove, { passive: false });
+  document.addEventListener('mouseup', onEnd);
+  document.addEventListener('touchend', onEnd);
+}
+
+function updateAllWatermarks() {
+  var cards = grid.querySelectorAll('.image-card-preview');
+  cards.forEach(function(preview, i) {
+    if (!entries[i]) return;
+    var wmDiv = preview.querySelector('.image-card-wm');
+    if (!wmDiv) return;
+    var wmSpan = wmDiv.querySelector('span');
+    setupWatermark(preview, wmDiv, wmSpan, entries[i]);
+  });
+}
+
+function downloadAll() {
+  var wm = getWmSettings();
+  entries.forEach(function(entry) {
+    // Clone the cropped canvas
+    var c = document.createElement('canvas');
+    c.width = entry.canvas.width;
+    c.height = entry.canvas.height;
+    var cx = c.getContext('2d');
+    cx.drawImage(entry.canvas, 0, 0);
+
+    // Draw watermark
+    if (wm.enabled) {
+      var size = c.width * wm.sizeRatio;
+      var stroke = Math.max(size * 0.03, 2);
+      var posX = entry.wmPosX * c.width;
+      var posY = entry.wmPosY * c.height;
+      cx.save();
+      cx.translate(posX, posY);
+      cx.font = '900 ' + size + 'px Arial, Helvetica, sans-serif';
+      cx.textAlign = 'center';
+      cx.textBaseline = 'middle';
+      cx.lineJoin = 'round';
+      cx.strokeStyle = 'rgba(255,255,255,' + wm.strokeOpacity + ')';
+      cx.lineWidth = stroke;
+      cx.strokeText('SAMPLE', 0, 0);
+      cx.fillStyle = 'rgba(0,0,0,' + wm.opacity + ')';
+      cx.fillText('SAMPLE', 0, 0);
+      cx.restore();
+    }
+
+    c.toBlob(function(blob) {
+      var a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = 'SAMPLE_' + entry.file.name;
+      a.click();
+    }, 'image/png');
+  });
+}
+</script>
+</body>
+</html>
