@@ -163,13 +163,18 @@ function processEntry(entry) {
   var target = getTargetSize(entry.isVertical);
   var tw = target.w, th = target.h;
   var iw = img.naturalWidth, ih = img.naturalHeight;
+  // Scale to cover: pick the larger scale so the image fully covers the target
   var scale = Math.max(tw / iw, th / ih);
+  var scaledW = iw * scale, scaledH = ih * scale;
+  // Source rectangle: center crop from original image
+  var sx = (iw - tw / scale) / 2;
+  var sy = (ih - th / scale) / 2;
+  var sW = tw / scale;
+  var sH = th / scale;
   var c = document.createElement('canvas');
   c.width = tw; c.height = th;
   var cx = c.getContext('2d');
-  var sw = iw * scale, sh = ih * scale;
-  var ox = (sw - tw) / 2, oy = (sh - th) / 2;
-  cx.drawImage(img, -ox / scale, -oy / scale, tw / scale, th / scale, 0, 0, tw, th);
+  cx.drawImage(img, sx, sy, sW, sH, 0, 0, tw, th);
   entry.canvas = c;
 }
 
