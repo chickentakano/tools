@@ -252,13 +252,13 @@ function processFiles(arr) {
     var file = arr[done];
     var img = new Image();
     img.onload = function() {
-      var score = calcSharpness(img);
-      var thumbUrl = makeThumbnail(img);
-      entries.push({ file: file, thumbUrl: thumbUrl, score: score });
-      done++;
-      fill.style.width = (done / total * 100) + '%';
-      // Use setTimeout to avoid blocking UI
-      setTimeout(processNext, 0);
+      calcSharpness(img).then(function(score) {
+        var thumbUrl = makeThumbnail(img);
+        entries.push({ file: file, thumbUrl: thumbUrl, score: score });
+        done++;
+        fill.style.width = (done / total * 100) + '%';
+        setTimeout(processNext, 0);
+      });
     };
     img.onerror = function() {
       done++;
@@ -294,12 +294,13 @@ function processFilesWithImages(normalFiles, heicImages) {
     function next() {
       if (idx >= heicImages.length) { finish(); return; }
       var item = heicImages[idx];
-      var score = calcSharpness(item.img);
-      var thumbUrl = makeThumbnail(item.img);
-      entries.push({ file: item.file, thumbUrl: thumbUrl, score: score });
-      done++; idx++;
-      fill.style.width = (done / total * 100) + '%';
-      setTimeout(next, 0);
+      calcSharpness(item.img).then(function(score) {
+        var thumbUrl = makeThumbnail(item.img);
+        entries.push({ file: item.file, thumbUrl: thumbUrl, score: score });
+        done++; idx++;
+        fill.style.width = (done / total * 100) + '%';
+        setTimeout(next, 0);
+      });
     }
     next();
   }
@@ -312,12 +313,13 @@ function processFilesWithImages(normalFiles, heicImages) {
     var file = normalFiles[nIdx];
     var img = new Image();
     img.onload = function() {
-      var score = calcSharpness(img);
-      var thumbUrl = makeThumbnail(img);
-      entries.push({ file: file, thumbUrl: thumbUrl, score: score });
-      done++; nIdx++;
-      fill.style.width = (done / total * 100) + '%';
-      setTimeout(processNormalNext, 0);
+      calcSharpness(img).then(function(score) {
+        var thumbUrl = makeThumbnail(img);
+        entries.push({ file: file, thumbUrl: thumbUrl, score: score });
+        done++; nIdx++;
+        fill.style.width = (done / total * 100) + '%';
+        setTimeout(processNormalNext, 0);
+      });
     };
     img.onerror = function() { done++; nIdx++; fill.style.width = (done / total * 100) + '%'; setTimeout(processNormalNext, 0); };
     img.src = URL.createObjectURL(file);
@@ -325,69 +327,104 @@ function processFilesWithImages(normalFiles, heicImages) {
   processNormalNext();
 }
 
+var hasFaceDetector = typeof FaceDetector !== 'undefined';
+
 function calcSharpness(img) {
-  // Higher resolution for better accuracy
-  var maxDim = 1024;
-  var scale = Math.min(maxDim / img.naturalWidth, maxDim / img.naturalHeight, 1);
-  var w = Math.floor(img.naturalWidth * scale);
-  var h = Math.floor(img.naturalHeight * scale);
+  return new Promise(function(resolve) {
+    var maxDim = 1024;
+    var scale = Math.min(maxDim / img.naturalWidth, maxDim / img.naturalHeight, 1);
+    var w = Math.floor(img.naturalWidth * scale);
+    var h = Math.floor(img.naturalHeight * scale);
 
-  var c = document.createElement('canvas');
-  c.width = w; c.height = h;
-  var cx = c.getContext('2d');
-  cx.drawImage(img, 0, 0, w, h);
+    var c = document.createElement('canvas');
+    c.width = w; c.height = h;
+    var cx = c.getContext('2d');
+    cx.drawImage(img, 0, 0, w, h);
 
-  var imageData = cx.getImageData(0, 0, w, h);
-  var data = imageData.data;
+    var imageData = cx.getImageData(0, 0, w, h);
+    var data = imageData.data;
 
-  // Convert to grayscale
-  var gray = new Float32Array(w * h);
-  for (var i = 0; i < w * h; i++) {
-    var idx = i * 4;
-    gray[i] = 0.299 * data[idx] + 0.587 * data[idx + 1] + 0.114 * data[idx + 2];
-  }
+    // Grayscale
+    var gray = new Float32Array(w * h);
+    for (var i = 0; i < w * h; i++) {
+      var idx = i * 4;
+      gray[i] = 0.299 * data[idx] + 0.587 * data[idx + 1] + 0.114 * data[idx + 2];
+    }
 
-  // Laplacian filter (full 8-neighbor kernel for better edge detection)
-  var sum = 0, sumCenter = 0;
-  var count = 0, countCenter = 0;
-  var cx0 = w / 2, cy0 = h / 2;
-  var centerR = Math.min(w, h) * 0.35; // center region radius
-
-  for (var y = 1; y < h - 1; y++) {
-    for (var x = 1; x < w - 1; x++) {
-      var val = -8 * gray[y * w + x]
-        + gray[(y - 1) * w + (x - 1)]
-        + gray[(y - 1) * w + x]
-        + gray[(y - 1) * w + (x + 1)]
-        + gray[y * w + (x - 1)]
-        + gray[y * w + (x + 1)]
-        + gray[(y + 1) * w + (x - 1)]
-        + gray[(y + 1) * w + x]
-        + gray[(y + 1) * w + (x + 1)];
-      var absVal = val * val;
-      sum += absVal;
-      count++;
-
-      // Center-weighted: subject is usually in center
-      var dx = x - cx0, dy = y - cy0;
-      if (dx * dx + dy * dy < centerR * centerR) {
-        sumCenter += absVal;
-        countCenter++;
+    // Laplacian (8-neighbor)
+    var laplacian = new Float32Array(w * h);
+    for (var y = 1; y < h - 1; y++) {
+      for (var x = 1; x < w - 1; x++) {
+        laplacian[y * w + x] = -8 * gray[y * w + x]
+          + gray[(y - 1) * w + (x - 1)] + gray[(y - 1) * w + x] + gray[(y - 1) * w + (x + 1)]
+          + gray[y * w + (x - 1)] + gray[y * w + (x + 1)]
+          + gray[(y + 1) * w + (x - 1)] + gray[(y + 1) * w + x] + gray[(y + 1) * w + (x + 1)];
       }
     }
-  }
 
-  var varianceAll = sum / count;
-  var varianceCenter = countCenter > 0 ? sumCenter / countCenter : varianceAll;
+    function regionScore(rx, ry, rw, rh) {
+      var s = 0, n = 0;
+      var x1 = Math.max(1, Math.floor(rx));
+      var y1 = Math.max(1, Math.floor(ry));
+      var x2 = Math.min(w - 2, Math.floor(rx + rw));
+      var y2 = Math.min(h - 2, Math.floor(ry + rh));
+      for (var y = y1; y < y2; y++) {
+        for (var x = x1; x < x2; x++) {
+          var v = laplacian[y * w + x];
+          s += v * v;
+          n++;
+        }
+      }
+      return n > 0 ? Math.min(100, Math.sqrt(s / n) * 0.3) : 0;
+    }
 
-  // Center-only score is what matters for portrait/subject focus
-  // Overall is secondary - background sharpness doesn't help
-  var scoreCenter = Math.min(100, Math.sqrt(varianceCenter) * 0.3);
-  var scoreAll = Math.min(100, Math.sqrt(varianceAll) * 0.3);
+    // Overall score
+    var allScore = regionScore(1, 1, w - 2, h - 2);
 
-  // Use the LOWER of center and overall - if center is blurry, it's NG
-  // even if background is sharp
-  return Math.min(scoreCenter, scoreAll * 0.8 + scoreCenter * 0.2);
+    // Try face detection
+    if (hasFaceDetector) {
+      var fd = new FaceDetector();
+      fd.detect(c).then(function(faces) {
+        if (faces.length > 0) {
+          // Score each face region, use the lowest (worst) face score
+          var faceScores = faces.map(function(face) {
+            var b = face.boundingBox;
+            // Expand face region slightly for context
+            var pad = Math.max(b.width, b.height) * 0.3;
+            return regionScore(
+              (b.x - pad) * scale, (b.y - pad) * scale,
+              (b.width + pad * 2) * scale, (b.height + pad * 2) * scale
+            );
+          });
+          var worstFace = Math.min.apply(null, faceScores);
+          // Face sharpness is primary
+          resolve(Math.min(worstFace, allScore));
+        } else {
+          // No face detected - fall back to center-weighted
+          resolve(centerFallback(w, h, laplacian, allScore));
+        }
+      }).catch(function() {
+        resolve(centerFallback(w, h, laplacian, allScore));
+      });
+    } else {
+      resolve(centerFallback(w, h, laplacian, allScore));
+    }
+
+    function centerFallback(w, h, lap, allScore) {
+      var cw = w * 0.5, ch = h * 0.5;
+      var cx = (w - cw) / 2, cy = (h - ch) / 2;
+      var s = 0, n = 0;
+      for (var y = Math.floor(cy); y < Math.floor(cy + ch); y++) {
+        for (var x = Math.floor(cx); x < Math.floor(cx + cw); x++) {
+          var v = lap[y * w + x];
+          s += v * v;
+          n++;
+        }
+      }
+      var centerScore = n > 0 ? Math.min(100, Math.sqrt(s / n) * 0.3) : 0;
+      return Math.min(centerScore, allScore);
+    }
+  });
 }
 
 function makeThumbnail(img) {
