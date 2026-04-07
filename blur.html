@@ -380,11 +380,14 @@ function calcSharpness(img) {
   var varianceAll = sum / count;
   var varianceCenter = countCenter > 0 ? sumCenter / countCenter : varianceAll;
 
-  // Combine: 40% overall + 60% center (subject focus matters more)
-  var combined = varianceAll * 0.4 + varianceCenter * 0.6;
+  // Center-only score is what matters for portrait/subject focus
+  // Overall is secondary - background sharpness doesn't help
+  var scoreCenter = Math.min(100, Math.sqrt(varianceCenter) * 0.3);
+  var scoreAll = Math.min(100, Math.sqrt(varianceAll) * 0.3);
 
-  // Normalize to 0-100
-  return Math.min(100, Math.sqrt(combined) * 0.3);
+  // Use the LOWER of center and overall - if center is blurry, it's NG
+  // even if background is sharp
+  return Math.min(scoreCenter, scoreAll * 0.8 + scoreCenter * 0.2);
 }
 
 function makeThumbnail(img) {
