@@ -71,26 +71,44 @@
 <script>
 var decoder = null;
 
-function initDecoder(retries) {
-  try {
-    if (typeof libheif !== 'undefined' && typeof libheif.HeifDecoder === 'function') {
-      decoder = new libheif.HeifDecoder();
+(function initLibheif() {
+  if (typeof libheif === 'undefined') {
+    setTimeout(initLibheif, 300);
+    return;
+  }
+
+  // libheif may be a factory function (Emscripten module) or an already-initialized object
+  var mod = typeof libheif === 'function' ? libheif() : libheif;
+
+  function tryInit(retries) {
+    if (mod.HeifDecoder) {
+      decoder = new mod.HeifDecoder();
       document.getElementById('libStatus').innerHTML = '<span style="color:#7fe08c;">デコーダ準備完了</span>';
       setTimeout(function() { document.getElementById('libStatus').style.display = 'none'; }, 2000);
+    } else if (mod.then) {
+      // It's a promise
+      mod.then(function(resolved) {
+        mod = resolved;
+        tryInit(0);
+      }).catch(function(e) {
+        document.getElementById('libStatus').innerHTML = '<span style="color:#e07f7f;">デコーダ初期化失敗: ' + e + '</span>';
+      });
     } else if (retries > 0) {
-      setTimeout(function() { initDecoder(retries - 1); }, 300);
+      setTimeout(function() { tryInit(retries - 1); }, 300);
     } else {
-      // Log what libheif actually is for debugging
-      var type = typeof libheif;
-      var keys = type === 'object' || type === 'function' ? Object.keys(libheif).slice(0, 10).join(', ') : 'N/A';
-      document.getElementById('libStatus').innerHTML = '<span style="color:#e07f7f;">デコーダ初期化失敗 (type: ' + type + ', keys: ' + keys + ')</span>';
+      document.getElementById('libStatus').innerHTML = '<span style="color:#e07f7f;">デコーダ初期化失敗</span>';
     }
-  } catch(e) {
-    document.getElementById('libStatus').innerHTML = '<span style="color:#e07f7f;">デコーダ初期化失敗: ' + e.message + '</span>';
   }
-}
 
-initDecoder(20);
+  if (mod && mod.then) {
+    mod.then(function(resolved) {
+      mod = resolved;
+      tryInit(20);
+    });
+  } else {
+    tryInit(20);
+  }
+})();
 
 var entries = [];
 var dropZone = document.getElementById('dropZone');
