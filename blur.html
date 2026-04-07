@@ -326,8 +326,8 @@ function processFilesWithImages(normalFiles, heicImages) {
 }
 
 function calcSharpness(img) {
-  // Downsample for performance
-  var maxDim = 512;
+  // Higher resolution for better accuracy
+  var maxDim = 1024;
   var scale = Math.min(maxDim / img.naturalWidth, maxDim / img.naturalHeight, 1);
   var w = Math.floor(img.naturalWidth * scale);
   var h = Math.floor(img.naturalHeight * scale);
@@ -347,36 +347,44 @@ function calcSharpness(img) {
     gray[i] = 0.299 * data[idx] + 0.587 * data[idx + 1] + 0.114 * data[idx + 2];
   }
 
-  // Laplacian filter
-  var laplacian = new Float32Array(w * h);
-  var sum = 0;
-  var count = 0;
+  // Laplacian filter (full 8-neighbor kernel for better edge detection)
+  var sum = 0, sumCenter = 0;
+  var count = 0, countCenter = 0;
+  var cx0 = w / 2, cy0 = h / 2;
+  var centerR = Math.min(w, h) * 0.35; // center region radius
+
   for (var y = 1; y < h - 1; y++) {
     for (var x = 1; x < w - 1; x++) {
-      var val = -4 * gray[y * w + x]
+      var val = -8 * gray[y * w + x]
+        + gray[(y - 1) * w + (x - 1)]
         + gray[(y - 1) * w + x]
-        + gray[(y + 1) * w + x]
+        + gray[(y - 1) * w + (x + 1)]
         + gray[y * w + (x - 1)]
-        + gray[y * w + (x + 1)];
-      laplacian[y * w + x] = val;
-      sum += val;
+        + gray[y * w + (x + 1)]
+        + gray[(y + 1) * w + (x - 1)]
+        + gray[(y + 1) * w + x]
+        + gray[(y + 1) * w + (x + 1)];
+      var absVal = val * val;
+      sum += absVal;
       count++;
+
+      // Center-weighted: subject is usually in center
+      var dx = x - cx0, dy = y - cy0;
+      if (dx * dx + dy * dy < centerR * centerR) {
+        sumCenter += absVal;
+        countCenter++;
+      }
     }
   }
 
-  // Variance of Laplacian
-  var mean = sum / count;
-  var variance = 0;
-  for (var y = 1; y < h - 1; y++) {
-    for (var x = 1; x < w - 1; x++) {
-      var diff = laplacian[y * w + x] - mean;
-      variance += diff * diff;
-    }
-  }
-  variance /= count;
+  var varianceAll = sum / count;
+  var varianceCenter = countCenter > 0 ? sumCenter / countCenter : varianceAll;
 
-  // Normalize to 0-100 range (roughly)
-  return Math.min(100, Math.sqrt(variance) * 0.5);
+  // Combine: 40% overall + 60% center (subject focus matters more)
+  var combined = varianceAll * 0.4 + varianceCenter * 0.6;
+
+  // Normalize to 0-100
+  return Math.min(100, Math.sqrt(combined) * 0.3);
 }
 
 function makeThumbnail(img) {
