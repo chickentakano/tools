@@ -70,13 +70,27 @@
 
 <script>
 var decoder = null;
-try {
-  decoder = new libheif.HeifDecoder();
-  document.getElementById('libStatus').innerHTML = '<span style="color:#7fe08c;">デコーダ準備完了</span>';
-  setTimeout(function() { document.getElementById('libStatus').style.display = 'none'; }, 2000);
-} catch(e) {
-  document.getElementById('libStatus').innerHTML = '<span style="color:#e07f7f;">デコーダ初期化失敗: ' + e.message + '</span>';
+
+function initDecoder(retries) {
+  try {
+    if (typeof libheif !== 'undefined' && typeof libheif.HeifDecoder === 'function') {
+      decoder = new libheif.HeifDecoder();
+      document.getElementById('libStatus').innerHTML = '<span style="color:#7fe08c;">デコーダ準備完了</span>';
+      setTimeout(function() { document.getElementById('libStatus').style.display = 'none'; }, 2000);
+    } else if (retries > 0) {
+      setTimeout(function() { initDecoder(retries - 1); }, 300);
+    } else {
+      // Log what libheif actually is for debugging
+      var type = typeof libheif;
+      var keys = type === 'object' || type === 'function' ? Object.keys(libheif).slice(0, 10).join(', ') : 'N/A';
+      document.getElementById('libStatus').innerHTML = '<span style="color:#e07f7f;">デコーダ初期化失敗 (type: ' + type + ', keys: ' + keys + ')</span>';
+    }
+  } catch(e) {
+    document.getElementById('libStatus').innerHTML = '<span style="color:#e07f7f;">デコーダ初期化失敗: ' + e.message + '</span>';
+  }
 }
+
+initDecoder(20);
 
 var entries = [];
 var dropZone = document.getElementById('dropZone');
