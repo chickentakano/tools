@@ -74,7 +74,7 @@
   </div>
 </div>
 <input type="file" id="fileInput" accept="image/*,.heic,.heif" multiple>
-<script src="https://cdn.jsdelivr.net/npm/heic2any@0.0.5/dist/heic2any.min.js" async></script>
+<script src="https://cdn.jsdelivr.net/npm/heic2any@0.0.4/dist/heic2any.min.js" async></script>
 
 <div class="progress-bar" id="progressBar"><div class="progress-fill" id="progressFill"></div></div>
 
@@ -136,12 +136,34 @@ function isAcceptable(file) {
 }
 
 function convertHeic(file) {
-  if (typeof heic2any === 'undefined') {
-    return Promise.reject('heic2any not loaded');
-  }
-  return heic2any({ blob: file, toType: 'image/jpeg', quality: 0.9 }).then(function(result) {
-    var blob = Array.isArray(result) ? result[0] : result;
-    return new File([blob], file.name.replace(/\.heic$|\.heif$/i, '.jpg'), { type: 'image/jpeg' });
+  // First try: load as image directly (some browsers support HEIC natively)
+  return new Promise(function(resolve, reject) {
+    var testImg = new Image();
+    var url = URL.createObjectURL(file);
+    testImg.onload = function() {
+      // Browser can decode HEIC natively - convert to JPEG via canvas
+      var c = document.createElement('canvas');
+      c.width = testImg.naturalWidth;
+      c.height = testImg.naturalHeight;
+      c.getContext('2d').drawImage(testImg, 0, 0);
+      URL.revokeObjectURL(url);
+      c.toBlob(function(blob) {
+        resolve(new File([blob], file.name.replace(/\.heic$|\.heif$/i, '.jpg'), { type: 'image/jpeg' }));
+      }, 'image/jpeg', 0.92);
+    };
+    testImg.onerror = function() {
+      URL.revokeObjectURL(url);
+      // Fallback: use heic2any
+      if (typeof heic2any === 'undefined') {
+        reject('heic2any not loaded');
+        return;
+      }
+      heic2any({ blob: file, toType: 'image/jpeg', quality: 0.9 }).then(function(result) {
+        var b = Array.isArray(result) ? result[0] : result;
+        resolve(new File([b], file.name.replace(/\.heic$|\.heif$/i, '.jpg'), { type: 'image/jpeg' }));
+      }).catch(reject);
+    };
+    testImg.src = url;
   });
 }
 
