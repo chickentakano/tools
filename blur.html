@@ -73,7 +73,8 @@
     <span style="font-size:11px; color:#555;">100枚以上OK・ブラウザ内で処理（アップロードなし）</span>
   </div>
 </div>
-<input type="file" id="fileInput" accept="image/*" multiple>
+<input type="file" id="fileInput" accept="image/*,.heic,.heif" multiple>
+<script src="https://cdn.jsdelivr.net/npm/heic2any@0.0.4/dist/heic2any.min.js"></script>
 
 <div class="progress-bar" id="progressBar"><div class="progress-fill" id="progressFill"></div></div>
 
@@ -125,9 +126,31 @@ document.getElementById('filterTabs').addEventListener('click', function(e) {
   renderGrid();
 });
 
+function isHeic(file) {
+  return file.name.toLowerCase().match(/\.heic$|\.heif$/) || file.type === 'image/heic' || file.type === 'image/heif';
+}
+
+function convertHeic(file) {
+  return heic2any({ blob: file, toType: 'image/jpeg', quality: 0.9 }).then(function(blob) {
+    return new File([blob], file.name.replace(/\.heic$|\.heif$/i, '.jpg'), { type: 'image/jpeg' });
+  });
+}
+
 function addFiles(files) {
-  var arr = Array.from(files).filter(function(f) { return f.type.startsWith('image/'); });
+  var arr = Array.from(files).filter(function(f) { return f.type.startsWith('image/') || isHeic(f); });
   if (!arr.length) return;
+
+  // Convert HEIC files first
+  var convertPromises = arr.map(function(f) {
+    return isHeic(f) ? convertHeic(f) : Promise.resolve(f);
+  });
+
+  Promise.all(convertPromises).then(function(converted) {
+    processFiles(converted);
+  });
+}
+
+function processFiles(arr) {
 
   var bar = document.getElementById('progressBar');
   var fill = document.getElementById('progressFill');
