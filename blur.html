@@ -74,7 +74,7 @@
   </div>
 </div>
 <input type="file" id="fileInput" accept="image/*,.heic,.heif" multiple>
-<script src="https://cdn.jsdelivr.net/npm/heic2any@0.0.4/dist/heic2any.min.js" async></script>
+<script src="https://unpkg.com/libheif-js@1.18.2/libheif-wasm/libheif-bundle.js"></script>
 
 <div class="progress-bar" id="progressBar"><div class="progress-fill" id="progressFill"></div></div>
 
@@ -126,44 +126,55 @@ document.getElementById('filterTabs').addEventListener('click', function(e) {
   renderGrid();
 });
 
+// libheif decoder init
+var heifDecoder = null;
+(function initLibheif() {
+  if (typeof libheif === 'undefined') { setTimeout(initLibheif, 300); return; }
+  var mod = typeof libheif === 'function' ? libheif() : libheif;
+  function tryInit(retries) {
+    if (mod.HeifDecoder) {
+      heifDecoder = new mod.HeifDecoder();
+    } else if (mod.then) {
+      mod.then(function(r) { mod = r; tryInit(0); });
+    } else if (retries > 0) {
+      setTimeout(function() { tryInit(retries - 1); }, 300);
+    }
+  }
+  if (mod && mod.then) { mod.then(function(r) { mod = r; tryInit(20); }); }
+  else { tryInit(20); }
+})();
+
 function isHeic(file) {
-  var name = file.name.toLowerCase();
-  return name.endsWith('.heic') || name.endsWith('.heif') || file.type === 'image/heic' || file.type === 'image/heif';
+  var n = file.name.toLowerCase();
+  return n.endsWith('.heic') || n.endsWith('.heif') || file.type === 'image/heic' || file.type === 'image/heif';
 }
 
 function isAcceptable(file) {
   return file.type.startsWith('image/') || isHeic(file) || file.name.toLowerCase().match(/\.(jpg|jpeg|png|gif|webp|bmp|heic|heif)$/);
 }
 
-function convertHeic(file) {
-  // First try: load as image directly (some browsers support HEIC natively)
+function convertHeicToImageElement(file) {
   return new Promise(function(resolve, reject) {
-    var testImg = new Image();
-    var url = URL.createObjectURL(file);
-    testImg.onload = function() {
-      // Browser can decode HEIC natively - convert to JPEG via canvas
-      var c = document.createElement('canvas');
-      c.width = testImg.naturalWidth;
-      c.height = testImg.naturalHeight;
-      c.getContext('2d').drawImage(testImg, 0, 0);
-      URL.revokeObjectURL(url);
-      c.toBlob(function(blob) {
-        resolve(new File([blob], file.name.replace(/\.heic$|\.heif$/i, '.jpg'), { type: 'image/jpeg' }));
-      }, 'image/jpeg', 0.92);
-    };
-    testImg.onerror = function() {
-      URL.revokeObjectURL(url);
-      // Fallback: use heic2any
-      if (typeof heic2any === 'undefined') {
-        reject('heic2any not loaded');
-        return;
-      }
-      heic2any({ blob: file, toType: 'image/jpeg', quality: 0.9 }).then(function(result) {
-        var b = Array.isArray(result) ? result[0] : result;
-        resolve(new File([b], file.name.replace(/\.heic$|\.heif$/i, '.jpg'), { type: 'image/jpeg' }));
-      }).catch(reject);
-    };
-    testImg.src = url;
+    if (!heifDecoder) { reject('decoder not ready'); return; }
+    file.arrayBuffer().then(function(buffer) {
+      try {
+        var data = heifDecoder.decode(new Uint8Array(buffer));
+        if (!data || !data.length) throw new Error('no image data');
+        var image = data[0];
+        var w = image.get_width();
+        var h = image.get_height();
+        var c = document.createElement('canvas');
+        c.width = w; c.height = h;
+        var cx = c.getContext('2d');
+        var imgData = cx.createImageData(w, h);
+        image.display(imgData, function(d) {
+          cx.putImageData(d || imgData, 0, 0);
+          var img = new Image();
+          img.onload = function() { resolve(img); };
+          img.src = c.toDataURL('image/jpeg', 0.95);
+        });
+      } catch(e) { reject(e); }
+    }).catch(reject);
   });
 }
 
@@ -179,35 +190,42 @@ function addFiles(files) {
     return;
   }
 
-  // Show converting message
   document.getElementById('summary').innerHTML = '<span style="color:#e0c97f;">HEIC変換中... ' + heicFiles.length + '枚</span>';
 
-  // Wait for heic2any to load if needed
-  function waitForHeic2any(cb, retries) {
-    if (typeof heic2any !== 'undefined') { cb(); return; }
+  // Wait for decoder
+  function waitForDecoder(cb, retries) {
+    if (heifDecoder) { cb(); return; }
     if (retries <= 0) {
-      document.getElementById('summary').innerHTML = '<span style="color:#e07f7f;">HEIC変換ライブラリの読み込みに失敗しました。JPG/PNGで再度お試しください。</span>';
+      document.getElementById('summary').innerHTML = '<span style="color:#e07f7f;">HEICデコーダの読み込みに失敗しました</span>';
       if (normalFiles.length) processFiles(normalFiles);
       return;
     }
-    setTimeout(function() { waitForHeic2any(cb, retries - 1); }, 500);
+    setTimeout(function() { waitForDecoder(cb, retries - 1); }, 500);
   }
 
-  waitForHeic2any(function() {
-    var convertPromises = heicFiles.map(function(f) {
-      return convertHeic(f).catch(function(err) {
-        console.warn('HEIC convert failed:', f.name, err);
-        return null;
-      });
-    });
+  waitForDecoder(function() {
+    var convertedImages = [];
+    var done = 0;
 
-    Promise.all(convertPromises).then(function(converted) {
-      var successful = converted.filter(function(f) { return f !== null; });
-      var allFiles = normalFiles.concat(successful);
-      if (allFiles.length) processFiles(allFiles);
-      else document.getElementById('summary').innerHTML = '<span style="color:#e07f7f;">変換に失敗しました</span>';
-    });
-  }, 10);
+    function convertNext() {
+      if (done >= heicFiles.length) {
+        // All HEIC converted, now process everything
+        processFilesWithImages(normalFiles, convertedImages);
+        return;
+      }
+      var f = heicFiles[done];
+      convertHeicToImageElement(f).then(function(img) {
+        convertedImages.push({ file: f, img: img });
+        done++;
+        document.getElementById('summary').innerHTML = '<span style="color:#e0c97f;">HEIC変換中... ' + done + ' / ' + heicFiles.length + '</span>';
+        setTimeout(convertNext, 10);
+      }).catch(function() {
+        done++;
+        setTimeout(convertNext, 10);
+      });
+    }
+    convertNext();
+  }, 20);
 }
 
 function processFiles(arr) {
@@ -251,6 +269,60 @@ function processFiles(arr) {
   }
 
   processNext();
+}
+
+function processFilesWithImages(normalFiles, heicImages) {
+  // Process normal files first, then already-decoded HEIC images
+  var bar = document.getElementById('progressBar');
+  var fill = document.getElementById('progressFill');
+  var total = normalFiles.length + heicImages.length;
+  bar.style.display = 'block';
+  fill.style.width = '0%';
+  var done = 0;
+
+  function finish() {
+    entries.sort(function(a, b) { return a.score - b.score; });
+    bar.style.display = 'none';
+    renderGrid();
+    updateSummary();
+    document.getElementById('filterTabs').style.display = 'flex';
+  }
+
+  function processHeicImages() {
+    if (!heicImages.length) { finish(); return; }
+    var idx = 0;
+    function next() {
+      if (idx >= heicImages.length) { finish(); return; }
+      var item = heicImages[idx];
+      var score = calcSharpness(item.img);
+      var thumbUrl = makeThumbnail(item.img);
+      entries.push({ file: item.file, thumbUrl: thumbUrl, score: score });
+      done++; idx++;
+      fill.style.width = (done / total * 100) + '%';
+      setTimeout(next, 0);
+    }
+    next();
+  }
+
+  if (!normalFiles.length) { processHeicImages(); return; }
+
+  var nIdx = 0;
+  function processNormalNext() {
+    if (nIdx >= normalFiles.length) { processHeicImages(); return; }
+    var file = normalFiles[nIdx];
+    var img = new Image();
+    img.onload = function() {
+      var score = calcSharpness(img);
+      var thumbUrl = makeThumbnail(img);
+      entries.push({ file: file, thumbUrl: thumbUrl, score: score });
+      done++; nIdx++;
+      fill.style.width = (done / total * 100) + '%';
+      setTimeout(processNormalNext, 0);
+    };
+    img.onerror = function() { done++; nIdx++; fill.style.width = (done / total * 100) + '%'; setTimeout(processNormalNext, 0); };
+    img.src = URL.createObjectURL(file);
+  }
+  processNormalNext();
 }
 
 function calcSharpness(img) {
