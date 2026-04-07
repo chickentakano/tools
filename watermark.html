@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="ja">
 <head>
@@ -49,7 +50,9 @@
 <div class="subtitle">画像にSAMPLE透かしを入れる（ドラッグで位置調整可）</div>
 
 <div class="controls">
-  <label>透明度 <input type="range" id="opacity" min="10" max="80" value="40"> <span id="opacityVal">40%</span></label>
+  <label>文字透明度 <input type="range" id="opacity" min="10" max="80" value="40"> <span id="opacityVal">40%</span></label>
+  <label>枠透明度 <input type="range" id="strokeOpacity" min="0" max="100" value="80"> <span id="strokeOpacityVal">80%</span></label>
+  <label>サイズ <input type="range" id="wmSize" min="10" max="50" value="22"> <span id="wmSizeVal">22%</span></label>
 </div>
 
 <div class="drop-zone" id="dropZone">
@@ -86,6 +89,14 @@ fileInput.addEventListener('change', function() { addFiles(fileInput.files); fil
 
 document.getElementById('opacity').addEventListener('input', function() {
   document.getElementById('opacityVal').textContent = this.value + '%';
+  updateAllWatermarks();
+});
+document.getElementById('strokeOpacity').addEventListener('input', function() {
+  document.getElementById('strokeOpacityVal').textContent = this.value + '%';
+  updateAllWatermarks();
+});
+document.getElementById('wmSize').addEventListener('input', function() {
+  document.getElementById('wmSizeVal').textContent = this.value + '%';
   updateAllWatermarks();
 });
 
@@ -170,12 +181,14 @@ function setupWatermark(preview, wm, wmText, entry) {
   if (!pw) return;
 
   var opacity = parseInt(document.getElementById('opacity').value) / 100;
-  var fontSize = pw * 0.22;
+  var strokeOpacity = parseInt(document.getElementById('strokeOpacity').value) / 100;
+  var sizeRatio = parseInt(document.getElementById('wmSize').value) / 100;
+  var fontSize = pw * sizeRatio;
   var stroke = Math.max(fontSize * 0.03, 1);
 
   wmText.style.fontSize = fontSize + 'px';
   wmText.style.color = 'rgba(0,0,0,' + opacity + ')';
-  wmText.style.webkitTextStroke = stroke + 'px rgba(255,255,255,0.8)';
+  wmText.style.webkitTextStroke = stroke + 'px rgba(255,255,255,' + strokeOpacity + ')';
 
   var wmW = wm.offsetWidth;
   var wmH = wm.offsetHeight;
@@ -231,6 +244,8 @@ function updateAllWatermarks() {
 
 function downloadAll() {
   var opacity = parseInt(document.getElementById('opacity').value) / 100;
+  var strokeOpacity = parseInt(document.getElementById('strokeOpacity').value) / 100;
+  var sizeRatio = parseInt(document.getElementById('wmSize').value) / 100;
 
   entries.forEach(function(entry) {
     var c = document.createElement('canvas');
@@ -240,7 +255,7 @@ function downloadAll() {
     c.height = img.naturalHeight;
     cx.drawImage(img, 0, 0);
 
-    var size = img.naturalWidth * 0.22;
+    var size = img.naturalWidth * sizeRatio;
     var stroke = Math.max(size * 0.03, 2);
     var posX = entry.posX * img.naturalWidth;
     var posY = entry.posY * img.naturalHeight;
@@ -251,7 +266,7 @@ function downloadAll() {
     cx.textAlign = 'center';
     cx.textBaseline = 'middle';
     cx.lineJoin = 'round';
-    cx.strokeStyle = 'rgba(255,255,255,0.8)';
+    cx.strokeStyle = 'rgba(255,255,255,' + strokeOpacity + ')';
     cx.lineWidth = stroke;
     cx.strokeText('SAMPLE', 0, 0);
     cx.fillStyle = 'rgba(0,0,0,' + opacity + ')';
