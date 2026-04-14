@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="WORK QUEST">
+<meta name="theme-color" content="#0a0a1a">
+<link rel="manifest" href="manifest.json">
+<title>WORK QUEST</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{--bg:#0a0a1a;--card:#141428;--gold:#ffd700;--gold-dim:#b8960f;--green:#4ade80;--green-bg:#1a2e1a;--text:#e8e8f0;--dim:#8888aa;--border:#2a2a4a;--red:#ff6b6b;--purple:#a855f7}
+body{font-family:-apple-system,'Hiragino Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden;-webkit-tap-highlight-color:transparent}
+.c{max-width:480px;margin:0 auto;padding:16px;padding-top:calc(16px + env(safe-area-inset-top));padding-bottom:calc(80px + env(safe-area-inset-bottom))}
+.hdr{text-align:center;padding:12px 0 8px}
+.hdr h1{font-size:20px;font-weight:900;color:var(--gold);letter-spacing:6px;text-shadow:0 0 20px rgba(255,215,0,.4)}
+.hdr .sub{font-size:10px;color:var(--dim);margin-top:2px}
+.char{background:linear-gradient(135deg,#141428,#1a1040);border:1px solid var(--gold-dim);border-radius:16px;padding:20px;margin:12px 0;position:relative;overflow:hidden}
+.char::before{content:'';position:absolute;top:-50%;left:-50%;width:200%;height:200%;background:radial-gradient(circle,rgba(255,215,0,.03) 0%,transparent 70%);animation:shimmer 8s ease-in-out infinite}
+@keyframes shimmer{0%,100%{transform:translate(0,0)}50%{transform:translate(20px,20px)}}
+.char .name{font-size:13px;color:var(--dim)}
+.char .title{font-size:18px;font-weight:900;color:var(--gold);margin:2px 0 12px}
+.lvl-row{display:flex;align-items:baseline;gap:8px}
+.lvl-row .num{font-size:36px;font-weight:900;color:var(--gold);text-shadow:0 0 15px rgba(255,215,0,.4);line-height:1}
+.lvl-row .lbl{font-size:11px;color:var(--dim)}
+.exp-wrap{margin-top:12px}
+.exp-lbl{display:flex;justify-content:space-between;font-size:10px;color:var(--dim);margin-bottom:4px}
+.exp-bar{width:100%;height:14px;background:var(--green-bg);border-radius:7px;overflow:hidden;border:1px solid #2a4a2a}
+.exp-fill{height:100%;background:linear-gradient(90deg,#22c55e,#4ade80,#86efac);border-radius:7px;transition:width 1.2s ease-out;box-shadow:0 0 10px rgba(74,222,128,.4);width:0}
+.exp-total{text-align:right;font-size:10px;color:var(--dim);margin-top:3px}
+.quote{background:linear-gradient(135deg,#1a1028,#0f1a2a);border:1px solid var(--purple);border-radius:12px;padding:18px;margin:12px 0;cursor:pointer;transition:border-color .3s;position:relative}
+.quote:active{border-color:var(--gold)}
+.quote .ico{font-size:22px;margin-bottom:6px}
+.quote .txt{font-size:14px;font-weight:700;line-height:1.7}
+.quote .auth{font-size:11px;color:var(--purple);text-align:right;margin-top:6px}
+.quote .tap{font-size:9px;color:var(--dim);text-align:center;margin-top:6px}
+.quote .mgr{position:absolute;top:12px;right:12px;background:rgba(168,85,247,.2);border:1px solid var(--purple);color:var(--purple);font-size:10px;padding:4px 10px;border-radius:6px;cursor:pointer}
+.stats{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin:12px 0}
+.stat{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:12px 8px;text-align:center}
+.stat .v{font-size:24px;font-weight:900;color:var(--gold);margin-bottom:4px}
+.stat .l{font-size:9px;color:var(--dim)}
+.sec{display:flex;align-items:center;gap:8px;margin:20px 0 10px;padding-bottom:6px;border-bottom:1px solid var(--border)}
+.sec h2{font-size:13px;font-weight:700}
+.sec .cnt{font-size:10px;color:var(--dim);margin-left:auto}
+.add-btn{width:100%;padding:14px;background:linear-gradient(135deg,#1a2a1a,#1a3a2a);border:1px dashed #4ade80;border-radius:10px;color:var(--green);font-size:13px;font-weight:700;cursor:pointer;margin-bottom:8px;transition:background .2s}
+.add-btn:active{background:#1a3a2a}
+.qi{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:12px 14px;margin-bottom:6px;display:flex;align-items:flex-start;gap:10px;cursor:pointer;transition:background .2s}
+.qi:active{background:var(--bg)}
+.qi.done{opacity:.5}
+.qi .icon{font-size:18px;flex-shrink:0;margin-top:2px}
+.qi .info{flex:1;min-width:0}
+.qi .info .t{font-size:12px;font-weight:700;line-height:1.4;margin-bottom:3px}
+.qi .meta{display:flex;gap:6px;flex-wrap:wrap}
+.qi .tag{font-size:9px;padding:2px 7px;border-radius:4px;background:rgba(255,255,255,.06);color:var(--dim)}
+.qi .tag.dl{color:var(--red);background:rgba(255,107,107,.15)}
+.qi .xp{font-size:11px;font-weight:900;color:var(--green);flex-shrink:0;margin-top:3px}
+.modal-bg{display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.7);backdrop-filter:blur(4px);z-index:50;justify-content:center;align-items:flex-end}
+.modal-bg.open{display:flex}
+.modal{background:#1a1a2e;border-radius:20px 20px 0 0;padding:24px 20px;padding-bottom:calc(24px + env(safe-area-inset-bottom));width:100%;max-width:480px;max-height:80vh;overflow-y:auto;animation:slideUp .3s ease-out}
+@keyframes slideUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
+.modal h3{font-size:16px;font-weight:900;margin-bottom:16px;color:var(--gold)}
+.modal .close{position:absolute;top:16px;right:20px;font-size:20px;color:var(--dim);cursor:pointer;background:none;border:none}
+.field{margin-bottom:14px}
+.field label{font-size:11px;color:var(--dim);display:block;margin-bottom:4px}
+.field input,.field textarea{width:100%;padding:12px;background:#0a0a1a;border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:14px;font-family:inherit}
+.field input:focus,.field textarea:focus{outline:none;border-color:var(--gold)}
+.eff-sel{display:flex;gap:8px;margin-bottom:14px}
+.eff-btn{flex:1;padding:10px 4px;background:#0a0a1a;border:1px solid var(--border);border-radius:8px;color:var(--dim);font-size:11px;text-align:center;cursor:pointer;transition:all .2s}
+.eff-btn.active{border-color:var(--gold);color:var(--gold);background:#1a1a2a}
+.cat-sel{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px}
+.cat-btn{padding:8px 14px;background:#0a0a1a;border:1px solid var(--border);border-radius:8px;color:var(--dim);font-size:11px;cursor:pointer;transition:all .2s}
+.cat-btn.active{border-color:var(--green);color:var(--green);background:#0a1a0a}
+.submit-btn{width:100%;padding:14px;background:linear-gradient(135deg,var(--gold-dim),var(--gold));border:none;border-radius:10px;color:#0a0a1a;font-size:14px;font-weight:900;cursor:pointer}
+.submit-btn:active{opacity:.8}
+.submit-btn.danger{background:linear-gradient(135deg,#8b0000,var(--red))}
+.submit-btn.complete{background:linear-gradient(135deg,#166534,var(--green))}
+.toast{position:fixed;top:40%;left:50%;transform:translate(-50%,-50%);font-size:24px;font-weight:900;color:var(--gold);text-shadow:0 0 20px rgba(255,215,0,.6);pointer-events:none;z-index:100;opacity:0}
+.toast.show{animation:toastAnim 1.5s ease-out}
+@keyframes toastAnim{0%{opacity:1;transform:translate(-50%,-50%) scale(1)}50%{opacity:1;transform:translate(-50%,-70%) scale(1.2)}100%{opacity:0;transform:translate(-50%,-90%) scale(1)}}
+.lvlup{position:fixed;top:0;left:0;right:0;bottom:0;background:radial-gradient(circle,rgba(255,215,0,.3),transparent 70%);pointer-events:none;z-index:99;opacity:0}
+.lvlup.show{animation:flash 1.5s ease-out}
+@keyframes flash{0%{opacity:1}100%{opacity:0}}
+.qlist-item{display:flex;align-items:center;gap:10px;padding:10px;border-bottom:1px solid var(--border)}
+.qlist-item .qtxt{flex:1;font-size:12px;line-height:1.4}
+.qlist-item .qauth{font-size:10px;color:var(--purple)}
+.qlist-item .qdel{background:none;border:1px solid var(--red);color:var(--red);font-size:10px;padding:4px 10px;border-radius:6px;cursor:pointer}
+.qlist-item .qdefault{font-size:9px;color:var(--dim)}
+.empty{text-align:center;padding:30px;color:var(--dim);font-size:12px}
+.footer{text-align:center;padding:20px 0;font-size:9px;color:var(--dim)}
+</style>
+</head>
+<body>
+<div class="toast" id="toast"></div>
+<div class="lvlup" id="lvlup"></div>
+<div class="c">
+  <div class="hdr"><h1>WORK QUEST</h1><div class="sub" id="dateLabel"></div></div>
+  <div class="char">
+    <div class="name" id="playerName"></div>
+    <div class="title" id="playerTitle"></div>
+    <div class="lvl-row"><span class="lbl">Lv.</span><span class="num" id="levelNum"></span></div>
+    <div class="exp-wrap">
+      <div class="exp-lbl"><span>EXP</span><span id="expLabel"></span></div>
+      <div class="exp-bar"><div class="exp-fill" id="expBar"></div></div>
+      <div class="exp-total" id="expTotal"></div>
+    </div>
+  </div>
+  <div class="quote" id="quoteCard" onclick="nextQuote()">
+    <button class="mgr" onclick="event.stopPropagation();openModal('quoteModal')">名言管理</button>
+    <div class="ico">🔥</div>
+    <div class="txt" id="qTxt"></div>
+    <div class="auth" id="qAuth"></div>
+    <div class="tap">タップで次の名言</div>
+  </div>
+  <div class="stats">
+    <div class="stat"><div class="v" id="totalClear">0</div><div class="l">総クリア数</div></div>
+    <div class="stat"><div class="v" id="weekClear">0</div><div class="l">今週クリア</div></div>
+    <div class="stat"><div class="v" id="streak">0</div><div class="l">連続日数</div></div>
+  </div>
+  <div class="sec"><h2>⚔️ 受注中クエスト</h2><span class="cnt" id="activeCnt"></span></div>
+  <button class="add-btn" onclick="openModal('addModal')">＋ クエスト追加</button>
+  <div id="activeList"></div>
+  <div class="sec"><h2>✅ 最近クリアしたクエスト</h2></div>
+  <div id="doneList"></div>
+  <div class="footer">WORK QUEST v1.0 — データは端末内に保存されます</div>
+</div>
+
+<!-- Add Quest Modal -->
+<div class="modal-bg" id="addModal" onclick="if(event.target===this)closeModal('addModal')">
+<div class="modal">
+  <h3>クエスト追加</h3>
+  <div class="field"><label>クエスト名</label><input id="addTitle" placeholder="やること"></div>
+  <label style="font-size:11px;color:var(--dim);margin-bottom:4px;display:block">難易度</label>
+  <div class="eff-sel">
+    <button class="eff-btn active" data-eff="small" onclick="selEff(this)">⭐<br>+10 EXP</button>
+    <button class="eff-btn" data-eff="medium" onclick="selEff(this)">⭐⭐<br>+25 EXP</button>
+    <button class="eff-btn" data-eff="large" onclick="selEff(this)">⭐⭐⭐<br>+50 EXP</button>
+  </div>
+  <label style="font-size:11px;color:var(--dim);margin-bottom:4px;display:block">カテゴリ</label>
+  <div class="cat-sel">
+    <button class="cat-btn active" data-cat="仕事" onclick="selCat(this)">仕事</button>
+    <button class="cat-btn" data-cat="企画" onclick="selCat(this)">企画</button>
+    <button class="cat-btn" data-cat="事務" onclick="selCat(this)">事務</button>
+    <button class="cat-btn" data-cat="学習" onclick="selCat(this)">学習</button>
+    <button class="cat-btn" data-cat="その他" onclick="selCat(this)">その他</button>
+  </div>
+  <button class="submit-btn" onclick="addQuest()">追加する</button>
+</div></div>
+
+<!-- Quest Detail Modal -->
+<div class="modal-bg" id="detailModal" onclick="if(event.target===this)closeModal('detailModal')">
+<div class="modal" style="position:relative">
+  <h3 id="detTitle"></h3>
+  <div style="margin-bottom:16px">
+    <div class="meta"><span class="tag" id="detCat"></span><span class="tag" id="detEff"></span><span class="tag" id="detDate"></span></div>
+  </div>
+  <button class="submit-btn complete" style="margin-bottom:8px" onclick="completeQuest()">完了する</button>
+  <button class="submit-btn danger" onclick="deleteQuest()">削除する</button>
+</div></div>
+
+<!-- Quote Management Modal -->
+<div class="modal-bg" id="quoteModal" onclick="if(event.target===this)closeModal('quoteModal')">
+<div class="modal">
+  <h3>名言管理</h3>
+  <button class="add-btn" onclick="openModal('addQuoteModal')">＋ オリジナル名言を追加</button>
+  <div id="quoteList"></div>
+</div></div>
+
+<!-- Add Quote Modal -->
+<div class="modal-bg" id="addQuoteModal" onclick="if(event.target===this)closeModal('addQuoteModal')">
+<div class="modal">
+  <h3>名言追加</h3>
+  <div class="field"><label>名言</label><textarea id="newQuoteTxt" rows="3" placeholder="ここに名言を入力"></textarea></div>
+  <div class="field"><label>誰の言葉？</label><input id="newQuoteAuth" placeholder="人物名（空欄OK）"></div>
+  <button class="submit-btn" onclick="addCustomQuote()">追加する</button>
+</div></div>
+
+<!-- Welcome Modal -->
+<div class="modal-bg" id="welcomeModal">
+<div class="modal" style="text-align:center">
+  <h3 style="margin-bottom:8px">WORK QUEST へようこそ</h3>
+  <p style="font-size:12px;color:var(--dim);margin-bottom:16px">仕事をクエストに変えて、レベルアップしよう</p>
+  <div class="field"><label>あなたの名前</label><input id="welcomeName" placeholder="名前を入力"></div>
+  <button class="submit-btn" onclick="saveName()">はじめる</button>
+</div></div>
+<script>
+// === CONFIG ===
+const EXP={small:10,medium:25,large:50};
+const LVLS=[0,50,120,200,300,420,560,720,900,1100,1320,1560,1820,2100,2400,2720,3060,3420,3800,4200,5000];
+const TITLES=[[1,"見習いワーカー"],[3,"駆け出しプランナー"],[6,"新米プロデューサー"],[9,"一人前のプロデューサー"],[12,"敏腕プロデューサー"],[16,"ベテランプロデューサー"],[20,"伝説のプロデューサー"]];
+const DEFAULT_QUOTES=[
+  {id:"d1",text:"小さなことを積み重ねることが、とんでもないところへ行くただひとつの道",author:"イチロー",custom:false},
+  {id:"d2",text:"明日死ぬかのように生きよ。永遠に生きるかのように学べ",author:"ガンジー",custom:false},
+  {id:"d3",text:"完璧を目指すよりまず終わらせろ",author:"マーク・ザッカーバーグ",custom:false},
+  {id:"d4",text:"天才とは1%のひらめきと99%の努力である",author:"トーマス・エジソン",custom:false},
+  {id:"d5",text:"為せば成る、為さねば成らぬ何事も",author:"上杉鷹山",custom:false},
+  {id:"d6",text:"千里の道も一歩から",author:"老子",custom:false},
+  {id:"d7",text:"行動は必ずしも幸福をもたらさないが、行動なくして幸福はない",author:"ベンジャミン・ディズレーリ",custom:false},
+  {id:"d8",text:"1%の改善を毎日続ければ、1年後には37倍になる",author:"ジェームズ・クリア",custom:false},
+  {id:"d9",text:"今日の自分を超えろ。比べる相手は昨日の自分だけだ",author:"オリジナル",custom:false},
+  {id:"d10",text:"締め切りは敵じゃない。お前を動かすエンジンだ",author:"オリジナル",custom:false}
+];
+
+// === DATA ===
+function ls(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d}catch(e){return d}}
+function ss(k,v){localStorage.setItem(k,JSON.stringify(v))}
+function gid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,7)}
+function tasks(){return ls('wq_tasks',[])}
+function completed(){return ls('wq_completed',[])}
+function customQuotes(){return ls('wq_custom_quotes',[])}
+function allQuotes(){return [...DEFAULT_QUOTES,...customQuotes().map(q=>({...q,custom:true}))]}
+function totalExp(){return completed().reduce((s,t)=>s+(EXP[t.effort]||25),0)}
+function calcLevel(exp){let l=1;for(let i=0;i<LVLS.length;i++){if(exp>=LVLS[i])l=i+1;else break}return l}
+function getTitle(lv){let t=TITLES[0][1];for(const[ml,tt]of TITLES)if(lv>=ml)t=tt;return t}
+function expProgress(lv,exp){
+  const cur=LVLS[lv-1]||0,nxt=LVLS[lv]||LVLS[LVLS.length-1]+500;
+  const inLv=exp-cur,need=nxt-cur;
+  return{inLv,need,pct:need>0?inLv/need:1}
+}
+function weeklyCount(){
+  const now=new Date(),d=now.getDay(),diff=d===0?6:d-1;
+  const mon=new Date(now);mon.setDate(now.getDate()-diff);mon.setHours(0,0,0,0);
+  return completed().filter(t=>{if(!t.completed_date)return false;return new Date(t.completed_date)>=mon}).length
+}
+function streakDays(){
+  const dates=new Set(completed().map(t=>t.completed_date).filter(Boolean));
+  if(!dates.size)return 0;
+  const today=new Date();let s=0,check=new Date(today);
+  const fmt=d=>d.toISOString().split('T')[0];
+  while(dates.has(fmt(check))){s++;check.setDate(check.getDate()-1)}
+  if(s===0){check=new Date(today);check.setDate(check.getDate()-1);while(dates.has(fmt(check))){s++;check.setDate(check.getDate()-1)}}
+  return s
+}
+
+// === UI ===
+let qIdx=Math.floor(Math.random()*allQuotes().length);
+let selQuestId=null;
+
+function render(){
+  const exp=totalExp(),lv=calcLevel(exp),p=expProgress(lv,exp);
+  const name=ls('wq_player_name','冒険者');
+  document.getElementById('dateLabel').textContent=new Date().toLocaleDateString('ja-JP',{year:'numeric',month:'long',day:'numeric'});
+  document.getElementById('playerName').textContent=name;
+  document.getElementById('playerTitle').textContent=getTitle(lv);
+  document.getElementById('levelNum').textContent=lv;
+  document.getElementById('expLabel').textContent=p.inLv+' / '+p.need;
+  document.getElementById('expTotal').textContent='Total EXP: '+exp;
+  setTimeout(()=>{document.getElementById('expBar').style.width=(p.pct*100).toFixed(1)+'%'},100);
+  document.getElementById('totalClear').textContent=completed().length;
+  document.getElementById('weekClear').textContent=weeklyCount();
+  document.getElementById('streak').textContent=streakDays();
+  showQuote();
+  renderTasks();
+  renderDone();
+  const t=tasks();
+  document.getElementById('activeCnt').textContent=t.length+'件';
+}
+
+function showQuote(){
+  const qs=allQuotes();
+  if(qs.length===0)return;
+  if(qIdx>=qs.length)qIdx=0;
+  const q=qs[qIdx];
+  document.getElementById('qTxt').textContent=q.text;
+  document.getElementById('qAuth').textContent='— '+(q.author||'不明');
+}
+function nextQuote(){qIdx=(qIdx+1)%allQuotes().length;showQuote()}
+
+function renderTasks(){
+  const list=document.getElementById('activeList');
+  const t=tasks();
+  if(!t.length){list.innerHTML='<div class="empty">クエストがありません<br>「＋ クエスト追加」で始めよう</div>';return}
+  list.innerHTML=t.map(q=>{
+    const xp=EXP[q.effort]||25;
+    return '<div class="qi" onclick="openDetail(\''+q.id+'\')"><span class="icon">⚔️</span><div class="info"><div class="t">'+esc(q.title)+'</div><div class="meta"><span class="tag">'+esc(q.category||'その他')+'</span><span class="tag">'+effortLabel(q.effort)+'</span></div></div><span class="xp">+'+xp+'</span></div>'
+  }).join('')
+}
+
+function renderDone(){
+  const list=document.getElementById('doneList');
+  const d=completed().slice(-8).reverse();
+  if(!d.length){list.innerHTML='<div class="empty">まだクリアしたクエストがありません</div>';return}
+  list.innerHTML=d.map(q=>{
+    const xp=EXP[q.effort]||25;
+    return '<div class="qi done"><span class="icon">✅</span><div class="info"><div class="t">'+esc(q.title)+'</div><div class="meta"><span class="tag">'+esc(q.category||'')+'</span><span class="tag">'+(q.completed_date||'')+'</span></div></div><span class="xp">+'+xp+'</span></div>'
+  }).join('')
+}
+
+function effortLabel(e){return e==='small'?'⭐':e==='large'?'⭐⭐⭐':'⭐⭐'}
+function esc(s){const d=document.createElement('div');d.textContent=s;return d.innerHTML}
+
+// === ACTIONS ===
+function openModal(id){document.getElementById(id).classList.add('open')}
+function closeModal(id){document.getElementById(id).classList.remove('open')}
+
+function selEff(el){document.querySelectorAll('.eff-btn').forEach(b=>b.classList.remove('active'));el.classList.add('active')}
+function selCat(el){document.querySelectorAll('.cat-btn').forEach(b=>b.classList.remove('active'));el.classList.add('active')}
+
+function addQuest(){
+  const title=document.getElementById('addTitle').value.trim();
+  if(!title)return;
+  const eff=document.querySelector('.eff-btn.active')?.dataset.eff||'medium';
+  const cat=document.querySelector('.cat-btn.active')?.dataset.cat||'その他';
+  const t=tasks();
+  t.push({id:gid(),title,effort:eff,category:cat,created:new Date().toISOString().split('T')[0]});
+  ss('wq_tasks',t);
+  document.getElementById('addTitle').value='';
+  closeModal('addModal');
+  render();
+}
+
+function openDetail(id){
+  selQuestId=id;
+  const q=tasks().find(t=>t.id===id);
+  if(!q)return;
+  document.getElementById('detTitle').textContent=q.title;
+  document.getElementById('detCat').textContent=q.category||'その他';
+  document.getElementById('detEff').textContent=effortLabel(q.effort)+' +'+EXP[q.effort]+'EXP';
+  document.getElementById('detDate').textContent='追加: '+q.created;
+  openModal('detailModal');
+}
+
+function completeQuest(){
+  if(!selQuestId)return;
+  const t=tasks(),idx=t.findIndex(q=>q.id===selQuestId);
+  if(idx<0)return;
+  const q=t.splice(idx,1)[0];
+  const prevLv=calcLevel(totalExp());
+  const d=completed();
+  q.completed_date=new Date().toISOString().split('T')[0];
+  d.push(q);
+  ss('wq_tasks',t);ss('wq_completed',d);
+  const newLv=calcLevel(totalExp());
+  closeModal('detailModal');
+  showToast('+'+(EXP[q.effort]||25)+' EXP!');
+  if(newLv>prevLv)setTimeout(()=>showLevelUp(newLv),800);
+  render();
+}
+
+function deleteQuest(){
+  if(!selQuestId)return;
+  if(!confirm('このクエストを削除しますか？'))return;
+  const t=tasks().filter(q=>q.id!==selQuestId);
+  ss('wq_tasks',t);
+  closeModal('detailModal');
+  render();
+}
+
+function showToast(msg){
+  const el=document.getElementById('toast');
+  el.textContent=msg;el.classList.remove('show');
+  void el.offsetWidth;el.classList.add('show');
+}
+function showLevelUp(lv){
+  showToast('LEVEL UP! Lv.'+lv);
+  const el=document.getElementById('lvlup');
+  el.classList.remove('show');void el.offsetWidth;el.classList.add('show');
+}
+
+// === QUOTES ===
+function renderQuoteList(){
+  const list=document.getElementById('quoteList');
+  const qs=allQuotes();
+  list.innerHTML=qs.map(q=>{
+    const del=q.custom?'<button class="qdel" onclick="delQuote(\''+q.id+'\')">削除</button>':'<span class="qdefault">デフォルト</span>';
+    return '<div class="qlist-item"><div style="flex:1"><div class="qtxt">'+esc(q.text)+'</div><div class="qauth">— '+esc(q.author||'不明')+'</div></div>'+del+'</div>'
+  }).join('')
+}
+
+function addCustomQuote(){
+  const text=document.getElementById('newQuoteTxt').value.trim();
+  if(!text)return;
+  const author=document.getElementById('newQuoteAuth').value.trim()||'自分';
+  const qs=customQuotes();
+  qs.push({id:gid(),text,author});
+  ss('wq_custom_quotes',qs);
+  document.getElementById('newQuoteTxt').value='';
+  document.getElementById('newQuoteAuth').value='';
+  closeModal('addQuoteModal');
+  renderQuoteList();
+  showToast('名言追加!');
+}
+
+function delQuote(id){
+  if(!confirm('この名言を削除しますか？'))return;
+  const qs=customQuotes().filter(q=>q.id!==id);
+  ss('wq_custom_quotes',qs);
+  renderQuoteList();
+}
+
+// === WELCOME ===
+function saveName(){
+  const name=document.getElementById('welcomeName').value.trim();
+  if(!name)return;
+  ss('wq_player_name',name);
+  closeModal('welcomeModal');
+  render();
+}
+
+// === INIT ===
+document.addEventListener('DOMContentLoaded',()=>{
+  if(!ls('wq_player_name',null))openModal('welcomeModal');
+  render();
+  renderQuoteList();
+});
+
+// Register service worker
+if('serviceWorker' in navigator){navigator.serviceWorker.register('sw.js').catch(()=>{})}
+</script>
+</body>
+</html>

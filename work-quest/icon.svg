@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect width="512" height="512" rx="96" fill="#0a0a1a"/>
+  <rect x="16" y="16" width="480" height="480" rx="80" fill="none" stroke="#b8960f" stroke-width="4"/>
+  <text x="256" y="200" text-anchor="middle" font-family="sans-serif" font-weight="900" font-size="72" fill="#ffd700">WORK</text>
+  <text x="256" y="300" text-anchor="middle" font-family="sans-serif" font-weight="900" font-size="72" fill="#ffd700">QUEST</text>
+  <text x="256" y="380" text-anchor="middle" font-family="sans-serif" font-size="48">⚔️</text>
+  <rect x="100" y="420" width="312" height="20" rx="10" fill="#1a2e1a" stroke="#2a4a2a" stroke-width="2"/>
+  <rect x="100" y="420" width="200" height="20" rx="10" fill="#4ade80"/>
+</svg>
