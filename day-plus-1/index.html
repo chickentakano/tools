@@ -1,0 +1,1668 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Day +1 - 毎日、+1の自分になる</title>
+<meta name="description" content="3行で十分。続けられる、超ミニマル成長ジャーナル。">
+<meta name="theme-color" content="#FF8A3D">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Day +1">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+<link rel="icon" type="image/svg+xml" href="icon.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700;9..144,900&display=swap" rel="stylesheet">
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+:root {
+  --bg: #FAF7F2;
+  --paper: #FFFFFF;
+  --text: #2A2A2A;
+  --text-sub: #888;
+  --accent: #FF8A3D;
+  --accent-soft: #FFE8D6;
+  --border: #E8E4DC;
+  --heat-l1: #FFD9B8;
+  --heat-l2: #FFB87D;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #1A1A1A;
+    --paper: #242424;
+    --text: #EFEFEF;
+    --text-sub: #888;
+    --accent: #FF7A29;
+    --accent-soft: #3A2A1F;
+    --border: #333;
+    --heat-l1: #5C3D2A;
+    --heat-l2: #C97A40;
+  }
+}
+
+html.force-light {
+  --bg: #FAF7F2;
+  --paper: #FFFFFF;
+  --text: #2A2A2A;
+  --text-sub: #888;
+  --accent: #FF8A3D;
+  --accent-soft: #FFE8D6;
+  --border: #E8E4DC;
+  --heat-l1: #FFD9B8;
+  --heat-l2: #FFB87D;
+  color-scheme: light;
+}
+
+html.force-dark {
+  --bg: #1A1A1A;
+  --paper: #242424;
+  --text: #EFEFEF;
+  --text-sub: #888;
+  --accent: #FF7A29;
+  --accent-soft: #3A2A1F;
+  --border: #333;
+  --heat-l1: #5C3D2A;
+  --heat-l2: #C97A40;
+  color-scheme: dark;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Hiragino Sans', 'Noto Sans JP', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  padding: 12px 16px 40px;
+  line-height: 1.6;
+}
+
+.container {
+  max-width: 480px;
+  margin: 0 auto;
+}
+
+header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 14px;
+  padding: 0 4px;
+}
+
+.logo {
+  font-family: 'Fraunces', serif;
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.logo .plus {
+  color: var(--accent);
+}
+
+.header-date {
+  font-size: 12px;
+  color: var(--text-sub);
+}
+
+.footer-tagline {
+  text-align: center;
+  font-size: 11px;
+  color: var(--text-sub);
+  margin-top: 32px;
+  opacity: 0.6;
+}
+
+.streak-card {
+  background: var(--paper);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 16px;
+  margin-bottom: 20px;
+  display: flex;
+  justify-content: space-around;
+  text-align: center;
+}
+
+.streak-item {
+  flex: 1;
+}
+
+.streak-num {
+  font-family: 'Fraunces', serif;
+  font-size: 36px;
+  font-weight: 900;
+  color: var(--accent);
+  line-height: 1;
+  letter-spacing: -0.03em;
+  font-variant-numeric: tabular-nums;
+  transition: transform .25s;
+}
+
+.streak-num.bump { transform: scale(1.18); }
+
+.streak-label {
+  font-size: 11px;
+  color: var(--text-sub);
+  margin-top: 6px;
+}
+
+.date-row { display: none; }
+
+.entry-form {
+  background: var(--paper);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 20px;
+  margin-bottom: 20px;
+}
+
+.field {
+  margin-bottom: 16px;
+}
+
+.field:last-child {
+  margin-bottom: 0;
+}
+
+.field-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--accent);
+  margin-bottom: 6px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.field-label .icon {
+  display: inline-block;
+  width: 18px;
+  height: 18px;
+  background: var(--accent-soft);
+  color: var(--accent);
+  border-radius: 50%;
+  text-align: center;
+  font-size: 11px;
+  line-height: 18px;
+  font-weight: bold;
+}
+
+.field input,
+.field textarea {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--bg);
+  color: var(--text);
+  font-size: 15px;
+  font-family: inherit;
+  line-height: 1.5;
+  display: block;
+}
+
+.field textarea {
+  resize: none;
+  overflow: hidden;
+  min-height: 42px;
+}
+
+.field input:focus,
+.field textarea:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.field-counter {
+  font-size: 11px;
+  color: var(--text-sub);
+  text-align: right;
+  margin-top: 4px;
+}
+
+.field-hint {
+  font-size: 11px;
+  color: var(--text-sub);
+  margin-top: 6px;
+  font-style: italic;
+  line-height: 1.5;
+}
+
+.save-btn {
+  width: 100%;
+  padding: 14px;
+  background: var(--accent);
+  color: white;
+  border: none;
+  border-radius: 12px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform 0.1s, opacity 0.2s;
+  margin-top: 8px;
+  font-family: inherit;
+}
+
+.save-btn:active {
+  transform: scale(0.98);
+}
+
+.save-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.save-btn.saved {
+  animation: savedPulse 0.7s ease-out;
+}
+@keyframes savedPulse {
+  0%   { box-shadow: 0 0 0 0 rgba(255,138,61,0.45); }
+  60%  { box-shadow: 0 0 0 14px rgba(255,138,61,0); transform: scale(1.02); }
+  100% { box-shadow: 0 0 0 0 rgba(255,138,61,0); transform: scale(1); }
+}
+
+.tabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.tab {
+  flex: 1;
+  padding: 8px;
+  border: 1px solid var(--border);
+  background: var(--paper);
+  color: var(--text-sub);
+  border-radius: 10px;
+  text-align: center;
+  font-size: 13px;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.tab.active {
+  background: var(--accent);
+  color: white;
+  border-color: var(--accent);
+}
+
+.history-section {
+  margin-top: 28px;
+}
+
+.section-title {
+  font-size: 14px;
+  font-weight: 600;
+  margin-bottom: 12px;
+  color: var(--text-sub);
+}
+
+.entry-card {
+  background: var(--paper);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 14px;
+  margin-bottom: 10px;
+}
+
+.entry-card.today {
+  border-color: var(--accent);
+  box-shadow: 0 2px 12px rgba(255,138,61,0.12);
+}
+
+.entry-date {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--accent);
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.today-badge {
+  background: var(--accent);
+  color: white;
+  font-size: 10px;
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+
+.entry-line {
+  font-size: 13px;
+  margin-bottom: 4px;
+  display: flex;
+  gap: 8px;
+}
+
+.entry-line:last-child {
+  margin-bottom: 0;
+}
+
+.entry-line-text {
+  flex: 1;
+  color: var(--text);
+}
+
+.entry-line.tomorrow {
+  padding-left: 10px;
+  border-left: 2px solid var(--accent-soft);
+  margin-top: 6px;
+}
+
+.entry-line.tomorrow .entry-line-text {
+  color: var(--text-sub);
+  font-size: 12px;
+}
+
+.empty-state {
+  text-align: center;
+  padding: 40px 20px;
+  color: var(--text-sub);
+  font-size: 13px;
+}
+
+.actions-row {
+  display: flex;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.action-btn {
+  flex: 1;
+  padding: 10px;
+  background: var(--paper);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  color: var(--text-sub);
+  font-size: 12px;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.action-btn:active {
+  transform: scale(0.98);
+}
+
+.toast {
+  position: fixed;
+  bottom: 30px;
+  left: 50%;
+  transform: translateX(-50%) translateY(100px);
+  background: var(--text);
+  color: var(--paper);
+  padding: 12px 20px;
+  border-radius: 24px;
+  font-size: 13px;
+  opacity: 0;
+  transition: transform 0.3s, opacity 0.3s;
+  pointer-events: none;
+  z-index: 100;
+}
+
+.toast.show {
+  transform: translateX(-50%) translateY(0);
+  opacity: 1;
+}
+
+.progress-card {
+  background: var(--paper);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 14px 16px;
+  margin-bottom: 16px;
+}
+
+.progress-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+  font-size: 12px;
+}
+
+.progress-target {
+  color: var(--text);
+  font-weight: 600;
+}
+
+.progress-target .reward {
+  color: var(--accent);
+  font-weight: 700;
+  margin-left: 4px;
+}
+
+.progress-num {
+  color: var(--text-sub);
+  font-variant-numeric: tabular-nums;
+}
+
+.progress-bar {
+  height: 8px;
+  background: var(--border);
+  border-radius: 4px;
+  overflow: hidden;
+  position: relative;
+}
+
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--accent-soft), var(--accent));
+  border-radius: 4px;
+  transition: width 0.6s cubic-bezier(.34,1.56,.64,1);
+}
+
+.progress-card.complete .progress-target {
+  color: var(--accent);
+}
+
+.badge-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 16px;
+  padding: 0 4px;
+}
+
+.badge {
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-size: 11px;
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.badge.locked {
+  background: transparent;
+  color: var(--text-sub);
+  border: 1px dashed var(--border);
+  opacity: 0.7;
+}
+
+.badge.next {
+  background: transparent;
+  color: var(--accent);
+  border: 1px dashed var(--accent);
+  opacity: 1;
+}
+
+.badge.new {
+  animation: badgePop 0.6s ease-out;
+}
+
+.theme-card {
+  background: var(--paper);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 12px 14px;
+  margin-bottom: 20px;
+}
+
+.theme-title {
+  font-size: 12px;
+  color: var(--text-sub);
+  margin-bottom: 10px;
+  font-weight: 600;
+}
+
+.theme-swatches {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.theme-swatch {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  cursor: pointer;
+  border: 2px solid transparent;
+  position: relative;
+  transition: transform 0.15s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+}
+
+.theme-swatch.active {
+  border-color: var(--text);
+}
+
+.theme-swatch.locked {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.theme-swatch.locked::after {
+  content: '🔒';
+  font-size: 14px;
+  filter: grayscale(1);
+}
+
+.theme-swatch:active {
+  transform: scale(0.92);
+}
+
+.theme-hint {
+  font-size: 11px;
+  color: var(--text-sub);
+  margin-top: 8px;
+  line-height: 1.4;
+}
+
+.brightness-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px dashed var(--border);
+}
+.brightness-label {
+  font-size: 11px;
+  color: var(--text-sub);
+  font-weight: 600;
+}
+.brightness-toggle {
+  display: flex;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 2px;
+}
+.bright-opt {
+  background: transparent;
+  border: none;
+  padding: 5px 10px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-sub);
+  cursor: pointer;
+  font-family: inherit;
+  border-radius: 6px;
+  transition: background .15s, color .15s;
+}
+.bright-opt.active {
+  background: var(--paper);
+  color: var(--accent);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+}
+
+@keyframes badgePop {
+  0% { transform: scale(0); }
+  60% { transform: scale(1.2); }
+  100% { transform: scale(1); }
+}
+
+.heatmap-card {
+  background: var(--paper);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 14px;
+  margin-bottom: 20px;
+}
+
+.heatmap-title {
+  font-size: 12px;
+  color: var(--text-sub);
+  margin-bottom: 10px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.heatmap-legend {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 10px;
+}
+
+.heatmap-grid {
+  display: grid;
+  grid-template-columns: repeat(13, 1fr);
+  gap: 3px;
+}
+
+.heatmap-col {
+  display: grid;
+  grid-template-rows: repeat(7, 1fr);
+  gap: 3px;
+}
+
+.heatmap-cell {
+  aspect-ratio: 1;
+  border-radius: 3px;
+  background: var(--border);
+  transition: transform 0.15s;
+}
+
+.heatmap-cell.l1 { background: var(--heat-l1); }
+.heatmap-cell.l2 { background: var(--heat-l2); }
+.heatmap-cell.l3 { background: var(--accent); }
+.heatmap-cell.today {
+  outline: 2px solid var(--text);
+  outline-offset: 1px;
+}
+.heatmap-cell.future {
+  background: transparent;
+}
+
+.recap-card {
+  background: var(--accent-soft);
+  border: 1px solid var(--accent);
+  border-radius: 16px;
+  padding: 16px;
+  margin-bottom: 20px;
+}
+
+.recap-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--accent);
+  margin-bottom: 8px;
+}
+
+.recap-text {
+  font-size: 14px;
+  color: var(--text);
+  margin-bottom: 12px;
+  line-height: 1.5;
+}
+
+.recap-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.recap-btn {
+  flex: 1;
+  padding: 8px;
+  border-radius: 10px;
+  border: 1px solid var(--accent);
+  background: var(--paper);
+  color: var(--accent);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.recap-btn.done {
+  background: var(--accent);
+  color: white;
+}
+
+.recap-btn:active { transform: scale(0.98); }
+
+.memory-section {
+  margin-top: 24px;
+}
+
+.memory-card {
+  background: var(--paper);
+  border: 1px dashed var(--border);
+  border-radius: 12px;
+  padding: 14px;
+  margin-bottom: 10px;
+}
+
+.memory-label {
+  font-size: 11px;
+  color: var(--text-sub);
+  margin-bottom: 6px;
+  font-weight: 600;
+}
+
+.confetti-container {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 200;
+  overflow: hidden;
+}
+
+.confetti-piece {
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  top: -20px;
+  animation: confettiFall linear forwards;
+}
+
+@keyframes confettiFall {
+  0% {
+    transform: translateY(0) rotate(0deg);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(100vh) rotate(720deg);
+    opacity: 0;
+  }
+}
+
+.milestone-banner {
+  position: fixed;
+  top: 30%;
+  left: 50%;
+  transform: translate(-50%, -50%) scale(0.5);
+  background: var(--accent);
+  color: white;
+  padding: 24px 40px;
+  border-radius: 20px;
+  font-size: 18px;
+  font-weight: 700;
+  text-align: center;
+  box-shadow: 0 10px 40px rgba(255,138,61,0.4);
+  opacity: 0;
+  pointer-events: none;
+  z-index: 150;
+  transition: transform 0.4s cubic-bezier(.34,1.56,.64,1), opacity 0.3s;
+}
+
+.milestone-banner.show {
+  transform: translate(-50%, -50%) scale(1);
+  opacity: 1;
+}
+
+.milestone-banner .sub {
+  font-size: 12px;
+  font-weight: 400;
+  margin-top: 4px;
+  opacity: 0.9;
+}
+
+/* === 案1: 時間帯適応 === */
+body.mode-morning .entry-form {
+  opacity: 0.55;
+  transition: opacity .3s, box-shadow .3s;
+}
+body.mode-morning .entry-form:focus-within,
+body.mode-morning .entry-form:hover {
+  opacity: 1;
+}
+body.mode-morning .recap-card {
+  box-shadow: 0 6px 22px rgba(255,138,61,0.22);
+}
+
+body.mode-evening .entry-form {
+  box-shadow: 0 6px 22px rgba(255,138,61,0.18);
+}
+body.mode-evening .recap-card {
+  opacity: 0.55;
+  transition: opacity .3s;
+}
+body.mode-evening .recap-card:hover {
+  opacity: 1;
+}
+
+/* === 案2: +1モーション === */
+.save-btn { overflow: visible; position: relative; }
+.plus-pop {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  color: white;
+  font-family: 'Fraunces', serif;
+  font-weight: 900;
+  font-size: 28px;
+  pointer-events: none;
+  opacity: 0;
+  text-shadow: 0 2px 8px rgba(0,0,0,0.18);
+  transform: translate(-50%, -50%) scale(0.5);
+}
+.save-btn.fired .plus-pop {
+  animation: plusUp 1.4s cubic-bezier(.22,1,.36,1) forwards;
+}
+@keyframes plusUp {
+  0%   { transform: translate(-50%, -50%) scale(0.6); opacity: 0; }
+  18%  { transform: translate(-50%, calc(-50% - 4px)) scale(1.15); opacity: 1; }
+  55%  { transform: translate(-50%, calc(-50% - 30px)) scale(1.25); opacity: 1; }
+  100% { transform: translate(-50%, calc(-50% - 70px)) scale(1.5); opacity: 0; }
+}
+
+.heatmap-cell.lit-pop {
+  animation: cellLit 0.8s cubic-bezier(.34,1.56,.64,1);
+}
+@keyframes cellLit {
+  0%   { transform: scale(0.4); }
+  60%  { transform: scale(1.25); }
+  100% { transform: scale(1); }
+}
+</style>
+</head>
+<body>
+<div class="container">
+  <header>
+    <div class="logo">Day <span class="plus">+1</span></div>
+    <div class="header-date" id="todayDate"></div>
+  </header>
+
+  <div class="entry-form">
+    <div class="field">
+      <div class="field-label">今日 挑戦したこと、成長したこと</div>
+      <textarea id="today" maxlength="140" rows="1" placeholder="新しく挑んだこと、できるようになったこと"></textarea>
+      <div class="field-counter"><span id="todayCount">0</span> / 140</div>
+    </div>
+    <div class="field">
+      <div class="field-label">明日のスタート</div>
+      <textarea id="tomorrow" maxlength="140" rows="1" placeholder="明朝 まず手をつけること"></textarea>
+      <div class="field-hint">朝考えなくて済む。夜は明日にバトンを渡して、ぐっすり眠ろう</div>
+      <div class="field-counter"><span id="tomorrowCount">0</span> / 140</div>
+    </div>
+    <button class="save-btn" id="saveBtn"><span class="save-btn-label" id="saveBtnLabel">保存する</span><span class="plus-pop">+1</span></button>
+  </div>
+
+  <div class="recap-card" id="recapCard" style="display:none;">
+    <div class="recap-title">🌅 今朝のスタート（昨夜のバトン）</div>
+    <div class="recap-text" id="recapText"></div>
+    <div class="recap-actions">
+      <button class="recap-btn" id="recapDoneBtn">スタート切れた ✓</button>
+      <button class="recap-btn" id="recapSkipBtn">明日に持ち越す</button>
+    </div>
+  </div>
+
+  <div class="streak-card">
+    <div class="streak-item">
+      <div class="streak-num" id="currentStreak">0</div>
+      <div class="streak-label">連続日数</div>
+    </div>
+    <div class="streak-item">
+      <div class="streak-num" id="longestStreak">0</div>
+      <div class="streak-label">最長記録</div>
+    </div>
+    <div class="streak-item">
+      <div class="streak-num" id="totalDays">0</div>
+      <div class="streak-label">累計日数</div>
+    </div>
+  </div>
+
+  <div class="progress-card" id="progressCard"></div>
+
+  <div class="badge-row" id="badgeRow"></div>
+
+  <div class="heatmap-card" id="heatmapCard">
+    <div class="heatmap-title">
+      <span>この3ヶ月の足跡</span>
+      <span class="heatmap-legend">少
+        <span class="heatmap-cell" style="width:10px;height:10px;display:inline-block;"></span>
+        <span class="heatmap-cell l1" style="width:10px;height:10px;display:inline-block;"></span>
+        <span class="heatmap-cell l2" style="width:10px;height:10px;display:inline-block;"></span>
+        <span class="heatmap-cell l3" style="width:10px;height:10px;display:inline-block;"></span>
+      多</span>
+    </div>
+    <div class="heatmap-grid" id="heatmapGrid"></div>
+  </div>
+
+  <div class="history-section">
+    <div class="section-title">直近7日間</div>
+    <div id="historyList"></div>
+  </div>
+
+  <div class="memory-section" id="memorySection" style="display:none;">
+    <div class="section-title">📮 過去の自分から</div>
+    <div id="memoryList"></div>
+  </div>
+
+  <div class="theme-card" id="themeCard"></div>
+
+  <div class="actions-row">
+    <button class="action-btn" id="exportBtn">Markdownエクスポート</button>
+    <button class="action-btn" id="allHistoryBtn">全期間を見る</button>
+  </div>
+
+  <div class="footer-tagline">毎日、+1の自分になる</div>
+</div>
+
+<div class="toast" id="toast">保存しました</div>
+<div class="milestone-banner" id="milestoneBanner"></div>
+<div class="confetti-container" id="confettiContainer"></div>
+
+<script>
+const STORAGE_KEY = 'dayplus1_entries';
+const STATS_KEY = 'dayplus1_stats';
+const BADGES_KEY = 'dayplus1_badges';
+const RECAP_KEY = 'dayplus1_recap';
+const THEME_KEY = 'dayplus1_theme';
+
+const THEMES = [
+  { id: 'orange', name: 'オレンジ', accent: '#FF8A3D', soft: '#FFE8D6', dAccent: '#FF7A29', dSoft: '#3A2A1F', unlock: null },
+  { id: 'green',  name: 'グリーン', accent: '#4CAF50', soft: '#D9EFD9', dAccent: '#6BC76F', dSoft: '#1F3A1F', unlock: { type: 'streak', n: 7,   label: '7日連続' } },
+  { id: 'blue',   name: 'ブルー',   accent: '#3D8FFF', soft: '#D6E4FF', dAccent: '#7AB0FF', dSoft: '#1A2F4A', unlock: { type: 'streak', n: 30,  label: '30日連続' } },
+  { id: 'rose',   name: 'ローズ',   accent: '#E91E63', soft: '#F8D6E0', dAccent: '#FF6B91', dSoft: '#3A1F2A', unlock: { type: 'total',  n: 50,  label: '累計50日' } },
+  { id: 'purple', name: 'パープル', accent: '#9C27B0', soft: '#EBD3F0', dAccent: '#C76FCC', dSoft: '#3A1F3F', unlock: { type: 'streak', n: 100, label: '100日連続' } },
+  { id: 'gold',   name: 'ゴールド', accent: '#D4A017', soft: '#F5E8C0', dAccent: '#E8C04D', dSoft: '#3A301F', unlock: { type: 'streak', n: 365, label: '365日連続' } }
+];
+
+const MILESTONES = [
+  { type: 'streak', n: 3,   label: '3日連続',   sub: '習慣化のスタート' },
+  { type: 'streak', n: 7,   label: '7日連続',   sub: 'グリーン解禁',       reward: 'theme:green' },
+  { type: 'streak', n: 14,  label: '14日連続',  sub: '半月の継続力' },
+  { type: 'streak', n: 30,  label: '30日連続',  sub: 'ブルー解禁',         reward: 'theme:blue' },
+  { type: 'streak', n: 50,  label: '50日連続',  sub: '習慣が血肉に' },
+  { type: 'streak', n: 100, label: '100日連続', sub: 'パープル解禁 / Day +100', reward: 'theme:purple' },
+  { type: 'streak', n: 365, label: '365日連続', sub: 'ゴールド解禁 / 1年完走', reward: 'theme:gold' },
+  { type: 'total',  n: 10,  label: '累計10日',  sub: 'はじめの一歩' },
+  { type: 'total',  n: 30,  label: '累計30日',  sub: '1ヶ月分の自分' },
+  { type: 'total',  n: 50,  label: '累計50日',  sub: 'ローズ解禁',         reward: 'theme:rose' },
+  { type: 'total',  n: 100, label: '累計100日', sub: '+100の自分' },
+  { type: 'total',  n: 365, label: '累計365日', sub: '+365の自分' }
+];
+
+function todayKey() {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+
+function formatDate(key) {
+  const [y, m, d] = key.split('-');
+  const dt = new Date(`${y}-${m}-${d}`);
+  const days = ['日','月','火','水','木','金','土'];
+  return `${parseInt(m)}月${parseInt(d)}日 (${days[dt.getDay()]})`;
+}
+
+function normalizeEntry(e) {
+  if (!e) return null;
+  if ('today' in e || 'tomorrow' in e) {
+    return { today: e.today || '', tomorrow: e.tomorrow || '', savedAt: e.savedAt };
+  }
+  const today = [e.learning, e.preparation].filter(x => x && String(x).trim()).join(' / ');
+  return { today, tomorrow: e.next || '', savedAt: e.savedAt };
+}
+
+function loadEntries() {
+  const raw = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
+  const out = {};
+  for (const k in raw) out[k] = normalizeEntry(raw[k]);
+  return out;
+}
+
+function saveEntries(entries) {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(entries));
+}
+
+function calculateStats() {
+  const entries = loadEntries();
+  const dates = Object.keys(entries).sort().reverse();
+  if (dates.length === 0) return { current: 0, longest: 0, total: 0 };
+
+  const total = dates.length;
+
+  let current = 0;
+  let cursor = new Date();
+  for (let i = 0; i < 365; i++) {
+    const key = `${cursor.getFullYear()}-${String(cursor.getMonth()+1).padStart(2,'0')}-${String(cursor.getDate()).padStart(2,'0')}`;
+    if (entries[key]) {
+      current++;
+      cursor.setDate(cursor.getDate() - 1);
+    } else {
+      if (i === 0) {
+        cursor.setDate(cursor.getDate() - 1);
+        continue;
+      }
+      break;
+    }
+  }
+
+  let longest = 0;
+  let temp = 0;
+  let prev = null;
+  for (const date of [...dates].reverse()) {
+    if (prev) {
+      const diff = (new Date(date) - new Date(prev)) / (1000*60*60*24);
+      if (diff === 1) temp++;
+      else temp = 1;
+    } else {
+      temp = 1;
+    }
+    longest = Math.max(longest, temp);
+    prev = date;
+  }
+
+  return { current, longest, total };
+}
+
+function renderStats(animate = false) {
+  const stats = calculateStats();
+  ['currentStreak','longestStreak','totalDays'].forEach((id, i) => {
+    const key = ['current','longest','total'][i];
+    const el = document.getElementById(id);
+    const from = parseInt(el.textContent, 10) || 0;
+    const to = stats[key];
+    if (animate && from !== to) animateNumber(el, from, to);
+    else el.textContent = to;
+  });
+}
+
+function animateNumber(el, from, to, dur = 600) {
+  const start = performance.now();
+  function tick(t) {
+    const p = Math.min(1, (t - start) / dur);
+    el.textContent = Math.floor(from + (to - from) * p);
+    if (p < 1) requestAnimationFrame(tick);
+    else {
+      el.textContent = to;
+      el.classList.add('bump');
+      setTimeout(() => el.classList.remove('bump'), 300);
+    }
+  }
+  requestAnimationFrame(tick);
+}
+
+function applyTimeOfDay() {
+  const h = new Date().getHours();
+  document.body.classList.remove('mode-morning', 'mode-evening', 'mode-day');
+  if (h >= 5 && h < 12) document.body.classList.add('mode-morning');
+  else if (h >= 12 && h < 18) document.body.classList.add('mode-day');
+  else document.body.classList.add('mode-evening');
+}
+
+function fireSaveAnim() {
+  const btn = document.getElementById('saveBtn');
+  btn.classList.remove('fired');
+  void btn.offsetWidth;
+  btn.classList.add('fired');
+}
+
+function popTodayCell() {
+  const cell = document.querySelector('.heatmap-cell.today');
+  if (!cell) return;
+  cell.classList.remove('lit-pop');
+  void cell.offsetWidth;
+  cell.classList.add('lit-pop');
+}
+
+function renderToday() {
+  const key = todayKey();
+  document.getElementById('todayDate').textContent = formatDate(key);
+  const entries = loadEntries();
+  const today = entries[key];
+  if (today) {
+    document.getElementById('today').value = today.today || '';
+    document.getElementById('tomorrow').value = today.tomorrow || '';
+    updateCounters();
+    document.getElementById('saveBtnLabel').textContent = '更新する';
+  }
+  autoGrowAll();
+}
+
+function renderHistory() {
+  const entries = loadEntries();
+  const today = todayKey();
+  const dates = Object.keys(entries).sort().reverse().slice(0, 7);
+  const list = document.getElementById('historyList');
+
+  if (dates.length === 0) {
+    list.innerHTML = '<div class="empty-state">まだ記録がありません。<br>今日から始めましょう。</div>';
+    return;
+  }
+
+  list.innerHTML = dates.map(date => {
+    const e = entries[date];
+    const isToday = date === today;
+    return renderEntryCard(date, e, { today: isToday });
+  }).join('');
+}
+
+function renderEntryCard(date, e, opts = {}) {
+  const isToday = !!opts.today;
+  const cardClass = (opts.cardClass || 'entry-card') + (isToday ? ' today' : '');
+  return `
+    <div class="${cardClass}">
+      <div class="entry-date">
+        ${formatDate(date)}
+        ${isToday ? '<span class="today-badge">今日</span>' : ''}
+      </div>
+      ${e.today ? `<div class="entry-line"><span class="entry-line-text">${escapeHtml(e.today)}</span></div>` : ''}
+      ${e.tomorrow ? `<div class="entry-line tomorrow"><span class="entry-line-text">${escapeHtml(e.tomorrow)}</span></div>` : ''}
+    </div>
+  `;
+}
+
+function escapeHtml(s) {
+  return s.replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+function loadBadges() {
+  return JSON.parse(localStorage.getItem(BADGES_KEY) || '[]');
+}
+
+function saveBadges(badges) {
+  localStorage.setItem(BADGES_KEY, JSON.stringify(badges));
+}
+
+function badgeKey(m) {
+  return `${m.type}-${m.n}`;
+}
+
+function checkMilestones(stats) {
+  const earned = new Set(loadBadges());
+  const newly = [];
+  for (const m of MILESTONES) {
+    const value = m.type === 'streak' ? stats.current : stats.total;
+    if (value >= m.n && !earned.has(badgeKey(m))) {
+      earned.add(badgeKey(m));
+      newly.push(m);
+    }
+  }
+  if (newly.length > 0) {
+    saveBadges([...earned]);
+  }
+  return newly;
+}
+
+function renderBadges(highlightKeys = []) {
+  const earnedSet = new Set(loadBadges());
+  const stats = calculateStats();
+  const nextStreak = MILESTONES.find(m => m.type === 'streak' && stats.current < m.n);
+  const nextTotal = MILESTONES.find(m => m.type === 'total' && stats.total < m.n);
+  const nextKeys = new Set([nextStreak, nextTotal].filter(Boolean).map(badgeKey));
+
+  const row = document.getElementById('badgeRow');
+  row.innerHTML = MILESTONES.map(m => {
+    const k = badgeKey(m);
+    const earned = earnedSet.has(k);
+    const isNew = highlightKeys.includes(k);
+    const isNext = !earned && nextKeys.has(k);
+    let cls = 'badge';
+    let icon = '🏅';
+    if (earned) {
+      cls += isNew ? ' new' : '';
+    } else if (isNext) {
+      cls += ' next';
+      icon = '🎯';
+    } else {
+      cls += ' locked';
+      icon = '🔒';
+    }
+    return `<span class="${cls}" title="${m.sub}">${icon} ${m.label}</span>`;
+  }).join('');
+}
+
+function getNextMilestone(stats) {
+  const candidates = [];
+  const nextStreak = MILESTONES.find(m => m.type === 'streak' && stats.current < m.n);
+  const nextTotal  = MILESTONES.find(m => m.type === 'total'  && stats.total  < m.n);
+  if (nextStreak) candidates.push({ m: nextStreak, value: stats.current });
+  if (nextTotal)  candidates.push({ m: nextTotal,  value: stats.total  });
+  if (candidates.length === 0) return null;
+  candidates.sort((a, b) => (a.m.n - a.value) - (b.m.n - b.value));
+  return candidates[0];
+}
+
+function renderProgress() {
+  const stats = calculateStats();
+  const card = document.getElementById('progressCard');
+  const next = getNextMilestone(stats);
+  if (!next) {
+    card.innerHTML = `
+      <div class="progress-header">
+        <span class="progress-target">全マイルストーン達成 🏆</span>
+        <span class="progress-num">${stats.current}日連続 / 累計${stats.total}日</span>
+      </div>
+      <div class="progress-bar"><div class="progress-fill" style="width:100%"></div></div>
+    `;
+    card.classList.add('complete');
+    return;
+  }
+  card.classList.remove('complete');
+  const m = next.m;
+  const value = next.value;
+  const pct = Math.min(100, Math.round((value / m.n) * 100));
+  const remaining = m.n - value;
+  const rewardText = m.reward ? `<span class="reward">→ ${m.sub}</span>` : '';
+  const typeLabel = m.type === 'streak' ? '連続' : '累計';
+  card.innerHTML = `
+    <div class="progress-header">
+      <span class="progress-target">次の目標: ${m.label}${rewardText}</span>
+      <span class="progress-num">${value} / ${m.n} 日（あと${remaining}）</span>
+    </div>
+    <div class="progress-bar"><div class="progress-fill" style="width:${pct}%"></div></div>
+  `;
+}
+
+function loadTheme() {
+  return localStorage.getItem(THEME_KEY) || 'orange';
+}
+
+function saveTheme(id) {
+  localStorage.setItem(THEME_KEY, id);
+}
+
+function getUnlockedThemes() {
+  const stats = calculateStats();
+  return THEMES.filter(t => {
+    if (!t.unlock) return true;
+    const v = t.unlock.type === 'streak' ? stats.longest : stats.total;
+    return v >= t.unlock.n;
+  });
+}
+
+function isDarkActive() {
+  const html = document.documentElement;
+  if (html.classList.contains('force-dark')) return true;
+  if (html.classList.contains('force-light')) return false;
+  return window.matchMedia('(prefers-color-scheme: dark)').matches;
+}
+
+function applyTheme(id) {
+  const theme = THEMES.find(t => t.id === id) || THEMES[0];
+  const root = document.documentElement;
+  const isDark = isDarkActive();
+  root.style.setProperty('--accent', isDark ? theme.dAccent : theme.accent);
+  root.style.setProperty('--accent-soft', isDark ? theme.dSoft : theme.soft);
+  const meta = document.querySelector('meta[name=theme-color]');
+  if (meta) meta.setAttribute('content', isDark ? theme.dAccent : theme.accent);
+}
+
+function renderThemes() {
+  const card = document.getElementById('themeCard');
+  const stats = calculateStats();
+  const unlockedIds = new Set(getUnlockedThemes().map(t => t.id));
+  const current = loadTheme();
+  const swatches = THEMES.map(t => {
+    const unlocked = unlockedIds.has(t.id);
+    const active = unlocked && t.id === current;
+    let cls = 'theme-swatch';
+    if (active) cls += ' active';
+    if (!unlocked) cls += ' locked';
+    const bg = unlocked ? t.accent : 'var(--border)';
+    const title = unlocked ? t.name : `${t.name}（${t.unlock.label}で解禁）`;
+    return `<div class="${cls}" data-id="${t.id}" title="${title}" style="background:${bg};"></div>`;
+  }).join('');
+  const nextLockedTheme = THEMES.find(t => t.unlock && !unlockedIds.has(t.id));
+  let hint = '';
+  if (nextLockedTheme) {
+    const u = nextLockedTheme.unlock;
+    const cur = u.type === 'streak' ? stats.current : stats.total;
+    hint = `<div class="theme-hint">次のテーマ「${nextLockedTheme.name}」: ${u.label}まであと${u.n - cur}日</div>`;
+  } else {
+    hint = `<div class="theme-hint">全テーマ解禁済み 🌈</div>`;
+  }
+  const brightness = loadBrightness();
+  const brightnessOpts = [
+    { id: 'auto',  label: '自動', icon: '◐' },
+    { id: 'light', label: 'ライト', icon: '☀' },
+    { id: 'dark',  label: 'ダーク', icon: '☾' }
+  ];
+  const brightnessHTML = brightnessOpts.map(o =>
+    `<button class="bright-opt${o.id === brightness ? ' active' : ''}" data-bright="${o.id}">${o.icon} ${o.label}</button>`
+  ).join('');
+
+  card.innerHTML = `
+    <div class="theme-title">🎨 テーマ</div>
+    <div class="theme-swatches">${swatches}</div>
+    ${hint}
+    <div class="brightness-row">
+      <div class="brightness-label">外観</div>
+      <div class="brightness-toggle">${brightnessHTML}</div>
+    </div>
+  `;
+  card.querySelectorAll('.theme-swatch').forEach(el => {
+    el.addEventListener('click', () => {
+      const id = el.dataset.id;
+      if (!unlockedIds.has(id)) {
+        showToast('まだロック中です');
+        return;
+      }
+      saveTheme(id);
+      applyTheme(id);
+      renderThemes();
+    });
+  });
+  card.querySelectorAll('.bright-opt').forEach(el => {
+    el.addEventListener('click', () => {
+      const v = el.dataset.bright;
+      saveBrightness(v);
+      applyBrightness(v);
+      applyTheme(loadTheme());
+      renderThemes();
+    });
+  });
+}
+
+function loadBrightness() {
+  return localStorage.getItem('dayplus1_brightness') || 'auto';
+}
+
+function saveBrightness(v) {
+  localStorage.setItem('dayplus1_brightness', v);
+}
+
+function applyBrightness(v) {
+  document.documentElement.classList.remove('force-light', 'force-dark');
+  if (v === 'light') document.documentElement.classList.add('force-light');
+  else if (v === 'dark') document.documentElement.classList.add('force-dark');
+}
+
+function fireConfetti() {
+  const container = document.getElementById('confettiContainer');
+  const colors = ['#FF8A3D', '#FFB87D', '#4CAF50', '#FFD9B8', '#FF6B6B', '#FFC93C'];
+  for (let i = 0; i < 60; i++) {
+    const piece = document.createElement('div');
+    piece.className = 'confetti-piece';
+    piece.style.left = Math.random() * 100 + '%';
+    piece.style.background = colors[Math.floor(Math.random() * colors.length)];
+    piece.style.animationDuration = (1.6 + Math.random() * 1.6) + 's';
+    piece.style.animationDelay = (Math.random() * 0.4) + 's';
+    piece.style.width = piece.style.height = (6 + Math.random() * 8) + 'px';
+    if (Math.random() > 0.5) piece.style.borderRadius = '50%';
+    container.appendChild(piece);
+    setTimeout(() => piece.remove(), 4000);
+  }
+}
+
+function showMilestoneBanner(m) {
+  const banner = document.getElementById('milestoneBanner');
+  banner.innerHTML = `🎉 ${m.label} 達成<div class="sub">${m.sub}</div>`;
+  banner.classList.add('show');
+  setTimeout(() => banner.classList.remove('show'), 2400);
+}
+
+function celebrateMilestones(newly) {
+  if (newly.length === 0) return;
+  fireConfetti();
+  newly.forEach((m, i) => {
+    setTimeout(() => showMilestoneBanner(m), i * 2600);
+  });
+}
+
+function renderHeatmap() {
+  const entries = loadEntries();
+  const grid = document.getElementById('heatmapGrid');
+  const todayK = todayKey();
+  const today = new Date();
+  const dayOfWeek = today.getDay();
+  const start = new Date(today);
+  start.setDate(today.getDate() - (84 + dayOfWeek));
+
+  let html = '';
+  for (let col = 0; col < 13; col++) {
+    let colHtml = '<div class="heatmap-col">';
+    for (let row = 0; row < 7; row++) {
+      const idx = col * 7 + row;
+      const d = new Date(start);
+      d.setDate(start.getDate() + idx);
+      const key = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+      const isFuture = d > today;
+      const e = entries[key];
+      let cls = 'heatmap-cell';
+      if (isFuture) {
+        cls += ' future';
+      } else if (e) {
+        const lines = [e.today, e.tomorrow].filter(x => x && String(x).trim()).length;
+        if (lines >= 2) cls += ' l3';
+        else if (lines === 1) cls += ' l2';
+      }
+      if (key === todayK) cls += ' today';
+      colHtml += `<div class="${cls}" title="${formatDate(key)}"></div>`;
+    }
+    colHtml += '</div>';
+    html += colHtml;
+  }
+  grid.innerHTML = html;
+}
+
+function loadRecap() {
+  return JSON.parse(localStorage.getItem(RECAP_KEY) || '{}');
+}
+
+function saveRecap(recap) {
+  localStorage.setItem(RECAP_KEY, JSON.stringify(recap));
+}
+
+function getYesterdayKey() {
+  const d = new Date();
+  d.setDate(d.getDate() - 1);
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+
+function renderRecap() {
+  const card = document.getElementById('recapCard');
+  const entries = loadEntries();
+  const yKey = getYesterdayKey();
+  const todayK = todayKey();
+  const recap = loadRecap();
+
+  const yEntry = entries[yKey];
+  if (!yEntry || !yEntry.tomorrow || recap[todayK]) {
+    card.style.display = 'none';
+    return;
+  }
+
+  document.getElementById('recapText').textContent = yEntry.tomorrow;
+  card.style.display = 'block';
+
+  document.getElementById('recapDoneBtn').onclick = () => {
+    recap[todayK] = { yesterdayKey: yKey, status: 'done', at: new Date().toISOString() };
+    saveRecap(recap);
+    showToast('スタート切れたね！+1 🎯');
+    card.style.display = 'none';
+  };
+  document.getElementById('recapSkipBtn').onclick = () => {
+    recap[todayK] = { yesterdayKey: yKey, status: 'skip', at: new Date().toISOString() };
+    saveRecap(recap);
+    const cur = document.getElementById('tomorrow');
+    if (!cur.value.trim()) {
+      cur.value = yEntry.tomorrow;
+      updateCounters();
+      autoGrow(cur);
+      cur.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      cur.focus();
+      showToast('「明日のスタート」に持ち越しました');
+    } else {
+      showToast('持ち越し記録');
+    }
+    card.style.display = 'none';
+  };
+}
+
+function getMemories() {
+  const entries = loadEntries();
+  const out = [];
+  const today = new Date();
+  const targets = [
+    { days: 7,   label: '1週間前の自分' },
+    { days: 30,  label: '1ヶ月前の自分' },
+    { days: 90,  label: '3ヶ月前の自分' },
+    { days: 365, label: '1年前の自分' }
+  ];
+  for (const t of targets) {
+    const d = new Date(today);
+    d.setDate(d.getDate() - t.days);
+    const key = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+    if (entries[key]) {
+      out.push({ key, label: t.label, entry: entries[key] });
+    }
+  }
+  return out;
+}
+
+function renderMemories() {
+  const memories = getMemories();
+  const section = document.getElementById('memorySection');
+  const list = document.getElementById('memoryList');
+  if (memories.length === 0) {
+    section.style.display = 'none';
+    return;
+  }
+  section.style.display = 'block';
+  list.innerHTML = memories.map(m => {
+    const e = m.entry;
+    return `
+      <div class="memory-card">
+        <div class="memory-label">${m.label} — ${formatDate(m.key)}</div>
+        ${e.today ? `<div class="entry-line"><span class="entry-line-text">${escapeHtml(e.today)}</span></div>` : ''}
+        ${e.tomorrow ? `<div class="entry-line tomorrow"><span class="entry-line-text">${escapeHtml(e.tomorrow)}</span></div>` : ''}
+      </div>
+    `;
+  }).join('');
+}
+
+function updateCounters() {
+  ['today','tomorrow'].forEach(id => {
+    const len = document.getElementById(id).value.length;
+    document.getElementById(id+'Count').textContent = len;
+  });
+}
+
+function autoGrow(el) {
+  el.style.height = 'auto';
+  el.style.height = el.scrollHeight + 'px';
+}
+
+function autoGrowAll() {
+  ['today','tomorrow'].forEach(id => autoGrow(document.getElementById(id)));
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 1800);
+}
+
+function save() {
+  const todayVal = document.getElementById('today').value.trim();
+  const tomorrowVal = document.getElementById('tomorrow').value.trim();
+
+  if (!todayVal && !tomorrowVal) {
+    showToast('1行は書きましょう');
+    return;
+  }
+
+  const entries = loadEntries();
+  entries[todayKey()] = { today: todayVal, tomorrow: tomorrowVal, savedAt: new Date().toISOString() };
+  saveEntries(entries);
+
+  const btn = document.getElementById('saveBtn');
+  const lbl = document.getElementById('saveBtnLabel');
+  fireSaveAnim();
+  lbl.textContent = '保存しました ✓';
+  btn.classList.add('saved');
+  setTimeout(() => {
+    btn.classList.remove('saved');
+    lbl.textContent = '更新する';
+  }, 1500);
+
+  renderStats(true);
+  const stats = calculateStats();
+
+  const newly = checkMilestones(stats);
+  renderBadges(newly.map(badgeKey));
+  renderProgress();
+  renderThemes();
+  renderHeatmap();
+  renderHistory();
+  renderMemories();
+  popTodayCell();
+
+  if (newly.length > 0) {
+    celebrateMilestones(newly);
+  } else {
+    showToast('保存しました');
+  }
+}
+
+function exportMarkdown() {
+  const entries = loadEntries();
+  const dates = Object.keys(entries).sort().reverse();
+  if (dates.length === 0) {
+    showToast('記録がまだありません');
+    return;
+  }
+
+  let md = '# Day +1 - 成長記録\n\n';
+  md += `エクスポート日: ${todayKey()}\n`;
+  md += `総記録日数: ${dates.length}日\n\n---\n\n`;
+
+  for (const date of dates) {
+    const e = entries[date];
+    md += `## ${formatDate(date)}\n\n`;
+    if (e.today) md += `- **今日 挑戦・成長**: ${e.today}\n`;
+    if (e.tomorrow) md += `- **明日のスタート**: ${e.tomorrow}\n`;
+    md += '\n';
+  }
+
+  const blob = new Blob([md], { type: 'text/markdown' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `day-plus-1_${todayKey()}.md`;
+  a.click();
+  URL.revokeObjectURL(url);
+  showToast('エクスポートしました');
+}
+
+function showAllHistory() {
+  const entries = loadEntries();
+  const dates = Object.keys(entries).sort().reverse();
+  const list = document.getElementById('historyList');
+  document.querySelector('.section-title').textContent = `全記録（${dates.length}日）`;
+  document.getElementById('allHistoryBtn').textContent = '直近7日に戻す';
+  document.getElementById('allHistoryBtn').onclick = () => {
+    document.querySelector('.section-title').textContent = '直近7日間';
+    document.getElementById('allHistoryBtn').textContent = '全期間を見る';
+    document.getElementById('allHistoryBtn').onclick = showAllHistory;
+    renderHistory();
+  };
+
+  if (dates.length === 0) {
+    list.innerHTML = '<div class="empty-state">まだ記録がありません。</div>';
+    return;
+  }
+
+  const today = todayKey();
+  list.innerHTML = dates.map(date => renderEntryCard(date, entries[date], { today: date === today })).join('');
+}
+
+document.getElementById('saveBtn').addEventListener('click', save);
+document.getElementById('exportBtn').addEventListener('click', exportMarkdown);
+document.getElementById('allHistoryBtn').addEventListener('click', showAllHistory);
+
+['today','tomorrow'].forEach(id => {
+  const el = document.getElementById(id);
+  el.addEventListener('input', () => {
+    updateCounters();
+    autoGrow(el);
+  });
+});
+
+applyBrightness(loadBrightness());
+applyTheme(loadTheme());
+window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => applyTheme(loadTheme()));
+applyTimeOfDay();
+document.addEventListener('visibilitychange', () => { if (!document.hidden) applyTimeOfDay(); });
+window.addEventListener('focus', applyTimeOfDay);
+renderStats();
+renderToday();
+renderHistory();
+renderBadges();
+renderProgress();
+renderThemes();
+renderHeatmap();
+renderRecap();
+renderMemories();
+
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('sw.js').catch(() => {});
+}
+</script>
+</body>
+</html>
